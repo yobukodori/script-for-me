@@ -111,14 +111,16 @@ let my = {
 				let options = Object.assign({}, s.options);
 				options.matches = s.matches;
 				options.js = [{code: s.js}];
-				browser.contentScripts.register(options)
-				.then(registered=>{
-					my.registered.push({script: s, registered: registered});
-					if (my.debug) my.log("Registered scripts[" + i + "]: " + scriptToString(s));
-				})
-				.catch(e=>{
-					my.log("error scripts[" + i + "]: " + e);
-				});
+				try{
+					browser.contentScripts.register(options)
+					.then(registered=>{
+						my.registered.push({script: s, registered: registered});
+						if (my.debug) my.log("Registered scripts[" + i + "]: " + scriptToString(s));
+					})
+				}
+				catch(e){
+					my.log("error scripts[" + i + "]: " + e.message);
+				}
 			});
 		}
         else {
