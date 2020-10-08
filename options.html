@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="options.css">
+</head>
+<body>
+    <div class="main">
+        <div>
+            <input type="checkbox" id="enableAtStartup">
+            <label for="enableAtStartup">Enable at startup</label>
+            <input type="checkbox" id="printDebugInfo">
+            <label for="printDebugInfo">Print debug info</label>
+        </div>
+        <div class="text-area">
+                Scripts Resource<br/>
+				<textarea id="scriptsResource" rows="15" spellcheck="false"></textarea>
+        </div>
+        <div>
+            <button type="button" id="save">Save</button>
+			<button type="button" id="apply">Apply</button>
+			| <button type="button" id="getStatus">Get Status</button>
+			<button type="button" id="toggle">Toggle On/Off</button>
+		</div>
+		<div id="log"><span>dummy for<br/><br/><br/><br/><br/><br/>
+			<br/><br/><br/>android</span></div>
+    </div>
+    <script src="util.js"></script>
+    <script src="options.js"></script>
+</body>
+</html>
