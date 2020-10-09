@@ -15,7 +15,7 @@ function scriptToString(s)
 	}
 	return "matches: " + s.matches.join() + '\n'
 			+ "options: " + JSON.stringify(s.options) + '\n'
-			+ "js: " + truncate(s.js, 80);
+			+ "js: " + truncate(s.js, 100);
 }
 
 function parseScriptsResource(scriptsResource)

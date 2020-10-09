@@ -21,11 +21,7 @@ function log(s)
 			indent += s[0] === ' ' ? 1 : col === 0 ? 4 : (4 - col % 4);
 			s = s.substring(1);
 		}
-		if (indent){
-			console.log("indent("+indent+") " + s);
-			e.innerHTML = "&nbsp;".repeat(indent);
-		}
-		e.appendChild(document.createTextNode(s));
+		e.appendChild(document.createTextNode((indent > 0 ? "\u00A0".repeat(indent) : "") + s));
 		e.appendChild(document.createElement("br"));
 		if (className){ e.classList.add(className); }
 		log.insertBefore(e, log.firstElementChild);
