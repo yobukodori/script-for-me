@@ -23,6 +23,7 @@ The //matches directive specifies a comma-separated list of [URL patterns](https
         }
         ```
   1. Finally, write the code with the //js directive.  
+  **[NOTE] Doesn't check the syntax of the code, so please paste the code that has been tested to work.**  
         ```
         //js  
         (function(){
