@@ -68,14 +68,25 @@ let my = {
 	onMessage : function(message, sender, sendResponse)
 	{
 		if (message.type === "getStatus"){
+			let registered = [];
+			my.registered.forEach(r=>{
+				registered.push(r.script)
+			});
 			browser.runtime.sendMessage({
 				type: "status",
 				"status": {
 					enabled: my.enabled,
 					debug: my.debug,
 					scriptsResource: my.scriptsResource,
-					scripts: my.scripts
+					scripts: my.scripts,
+					registered: registered
 				}
+			});
+		}
+		else if (message.type === "syncScriptsResource"){
+			browser.runtime.sendMessage({
+				type: "syncScriptsResource",
+				scriptsResource: my.scriptsResource
 			});
 		}
 		else if (message.type === "updateSettings"){
@@ -119,7 +130,8 @@ let my = {
 					})
 				}
 				catch(e){
-					my.log("error scripts[" + i + "]: " + e.message);
+					s.error = e.message;
+					my.log("Error scripts[" + i + "]: " + e.message);
 				}
 			});
 		}

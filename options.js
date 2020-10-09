@@ -2,20 +2,34 @@ let dummy_log_cleared;
 
 function log(s)
 {
-	let e = document.createElement("span");
-	e.innerText = s.replace(/\s+/g, ' ');
-	e.appendChild(document.createElement("br"));
-	if (/^error\b/i.test(s))
-		e.className = "error";
-	else if (/^warning\b/i.test(s))
-		e.className = "warning";
 	let log = document.querySelector('#log');
 	if (! dummy_log_cleared){
 		log.innerHTML = "";
 		log.appendChild(document.createElement("span"));
 		dummy_log_cleared = true;
 	}
-	log.insertBefore(e, log.firstElementChild);
+	if (! (s = s.replace(/\s+$/, ""))){
+		return;
+	}
+	let className = /^error\b/i.test(s) ? "error" : /^warning\b/i.test(s) ? "warning" : "";
+	let a = s.split("\n");
+	for (let i = a.length - 1 ; i >= 0 ; i--){
+		let s = a[i].replace(/\s+$/, "");
+		let e = document.createElement("span");
+		let col = 0, indent = 0;
+		while (s[0] === '\t' || s[0] === ' '){
+			indent += s[0] === ' ' ? 1 : col === 0 ? 4 : (4 - col % 4);
+			s = s.substring(1);
+		}
+		if (indent){
+			console.log("indent("+indent+") " + s);
+			e.innerHTML = "&nbsp;".repeat(indent);
+		}
+		e.appendChild(document.createTextNode(s));
+		e.appendChild(document.createElement("br"));
+		if (className){ e.classList.add(className); }
+		log.insertBefore(e, log.firstElementChild);
+	}
 }
 
 function applySettings(fSave)
@@ -69,12 +83,18 @@ function onMessage(m, sender, sendResponse)
 		log(m.str);
 	}
 	else if (m.type === "status"){
-		let s = m["status"];
-		log("enabled:"+s.enabled+" debug:"+s.debug+" scripts:"+s.scripts.length);
-		s.scripts.forEach((s,i)=>{
-			log(i + ") " + scriptToString(s).replace(/\s+/g, " "));
-		});
-		onStatusChange(s.enabled);
+		let status = m["status"];
+		for (let i = status.scripts.length - 1 ; i >= 0 ; i--){
+			let s = status.scripts[i];
+			log((s.error ? "Error " : "") + "scripts[" + i + "]: " 
+				+ (s.error ? s.error + '\n' : "") + scriptToString(s));
+		};
+		log("enabled:" + status.enabled + " debug:" + status.debug + " scripts:"
+				+ status.scripts.length + " registered:" + status.registered.length);
+		onStatusChange(status.enabled);
+	}
+	else if (m.type === "syncScriptsResource"){
+		document.querySelector('#scriptsResource').value = m.scriptsResource;
 	}
 	else if (m.type === "statusChange"){
 		onStatusChange(m.enabled);
@@ -137,9 +157,8 @@ function onDOMContentLoaded()
     .then((pref) => {
         document.querySelector('#enableAtStartup').checked = pref.enableAtStartup || false;
         document.querySelector('#printDebugInfo').checked = pref.printDebugInfo || false;
-		if (typeof pref.scriptsResource === "string" && /\S/.test(pref.scriptsResource))
-			document.querySelector('#scriptsResource').value = pref.scriptsResource;
     });
+	browser.runtime.sendMessage({type: "syncScriptsResource"});
 }
 
 document.addEventListener('DOMContentLoaded', onDOMContentLoaded);

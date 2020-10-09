@@ -1,7 +1,7 @@
 {
 	"manifest_version" : 2,
 	"name": "Script for Me",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"author": "yobukodori",
 	"description": "Injects JavaScript code into a page.",
 

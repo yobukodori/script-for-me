@@ -4,6 +4,9 @@ function isString(v){
 
 function scriptToString(s)
 {
+	function truncate(str, maxLength){
+		return str.length > maxLength ? str.substring(0, maxLength) + "..." : str;
+	}
 	if (s == null){
 		return "(null)";
 	}
@@ -12,7 +15,7 @@ function scriptToString(s)
 	}
 	return "matches: " + s.matches.join() + '\n'
 			+ "options: " + JSON.stringify(s.options) + '\n'
-			+ "js: " + s.js.substring(0,80);
+			+ "js: " + truncate(s.js, 80);
 }
 
 function parseScriptsResource(scriptsResource)
@@ -29,7 +32,12 @@ function parseScriptsResource(scriptsResource)
 	const initial = 0, after_matches = 1, after_options = 2, after_js = 3;
 	let state = initial, directive = "n/a", script;
 	for (let i = 0 ; i < a.length ; i++){
-		let s = a[i];
+		let s = a[i], r = s.match(/^\/\/(\w+)\b/);
+		if (r && ! ["matches","options","js"].includes(r[1])){
+			res.line = i + 1;
+			res.error = "unknown directive //" + r[1];
+			return res;
+		}
 		switch (state){
 		case initial:
 			if (isDirective(s, "matches")){
@@ -77,13 +85,18 @@ function parseScriptsResource(scriptsResource)
 		case after_options:
 			if (isDirective(s, "js")){
 				script.options = script.options.join('\n');
-				try {
-					script.options = JSON.parse(script.options);
+				if (/\S/.test(script.options)){
+					try {
+						script.options = JSON.parse(script.options);
+					}
+					catch (e){
+						res.line++;
+						res.error = e.message;
+						return res;
+					}
 				}
-				catch (e){
-					res.line++;
-					res.error = e.message;
-					return res;
+				else {
+					script.options = {};
 				}
 				res.line = i + 1;
 				directive = "//js";
@@ -119,7 +132,17 @@ function parseScriptsResource(scriptsResource)
 			continue;
 		}
 	}
-	res.error = (state === initial) ? "" : ("directive " + directive + " is not closed");
+	if (state === initial){
+		res.error = "";
+	}
+	else {
+		if (directive === "//matches"){
+			res.error = "//matches must be followed by //options or //js";
+		}
+		else if (directive === "//options"){
+			res.error = "//options must be followed by //js";
+		}
+	}
 	return res;
 }
 
