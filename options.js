@@ -89,7 +89,8 @@ function onMessage(m, sender, sendResponse)
 				+ status.scripts.length + " registered:" + status.registered.length);
 		onStatusChange(status.enabled);
 	}
-	else if (m.type === "syncScriptsResource"){
+	else if (m.type === "syncAppliedData"){
+        document.querySelector('#printDebugInfo').checked = m.debug;
 		document.querySelector('#scriptsResource').value = m.scriptsResource;
 	}
 	else if (m.type === "statusChange"){
@@ -152,9 +153,8 @@ function onDOMContentLoaded()
     browser.storage.sync.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
     .then((pref) => {
         document.querySelector('#enableAtStartup').checked = pref.enableAtStartup || false;
-        document.querySelector('#printDebugInfo').checked = pref.printDebugInfo || false;
     });
-	browser.runtime.sendMessage({type: "syncScriptsResource"});
+	browser.runtime.sendMessage({type: "syncAppliedData"});
 }
 
 document.addEventListener('DOMContentLoaded', onDOMContentLoaded);

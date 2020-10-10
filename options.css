@@ -19,7 +19,7 @@ button {
 	padding: 0.1em 0.5em;
 }
 
-.text-area {
+.text-box {
 	border-style: solid;
 	padding: 0px 5px 5px;
 	border-width: thin;
@@ -31,7 +31,7 @@ button {
 	-moz-tab-size: 4;
 }
 
-.text-area + div {
+.button-area{
 	margin-top: 5px;
 }
 

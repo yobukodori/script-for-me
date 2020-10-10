@@ -83,9 +83,10 @@ let my = {
 				}
 			});
 		}
-		else if (message.type === "syncScriptsResource"){
+		else if (message.type === "syncAppliedData"){
 			browser.runtime.sendMessage({
-				type: "syncScriptsResource",
+				type: "syncAppliedData",
+				debug: my.debug,
 				scriptsResource: my.scriptsResource
 			});
 		}
