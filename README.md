@@ -23,7 +23,7 @@ If the //matches directive are omitted, then ` https://*/*, http://*/* ` is used
         //options  
         {  
           "css":[{"code":"body{background-color:red;}"}],
-          "runAt": "document_end"  
+          "runAt": "document_end",  
           "wrapCodeInScriptTag": true
         }
         ```
