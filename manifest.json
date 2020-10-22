@@ -1,7 +1,7 @@
 {
 	"manifest_version" : 2,
 	"name": "Script for Me",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"author": "yobukodori",
 	"description": "Injects JavaScript code into a page.",
 
@@ -10,6 +10,7 @@
 	},
 
 	"permissions" : [
+		"tabs",
 		"storage",
 		"<all_urls>"
 	],
