@@ -167,10 +167,9 @@ let my = {
     updateButton : function() 
 	{
         let buttonStatus = my.enabled ? 'on' : 'off';
-		if (browser.browserAction.setIcon !== undefined)
+		if (browser.browserAction.setIcon !== undefined){
 			browser.browserAction.setIcon({path:{48:'icons/button-48-'+buttonStatus+'.png'}});
-		if (browser.browserAction.setTitle !== undefined)
-			browser.browserAction.setTitle({title: my.defaultTitle + " ("+buttonStatus+")"});
+		}
     }
 };
 

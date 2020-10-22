@@ -1,13 +1,20 @@
-function onDOMContentLoaded()
-{
-	let is_android = navigator.userAgent.indexOf('Android') > 0, is_pc = ! is_android;
-	
+function onDOMContentLoaded(platformInfo){
+	let os = platformInfo.os, is_mobile = os === "android", is_pc = ! is_mobile;
+	console.log("is_pc:",is_pc,"is_mobile:",is_mobile);
 	document.querySelector('#enable-future').addEventListener('change', ev=>{
 		browser.runtime.sendMessage({type: "toggle"});
 	});
 	document.querySelector('#settings').addEventListener('click', ev=>{
-		browser.runtime.openOptionsPage();
-		window.close();
+		browser.runtime.openOptionsPage()
+		.then(()=>{
+			if (is_pc){
+				window.close();
+			}
+		})
+		.catch(err=>{
+			document.body.insertBefore(
+				document.createTextNode("Error: " + err), document.body.firstChild);
+		});
 	});
 
 	document.querySelectorAll("body, input, textarea, button").forEach(e=>{
@@ -28,4 +35,6 @@ function onDOMContentLoaded()
 	});
 }
 
-document.addEventListener('DOMContentLoaded', onDOMContentLoaded);
+document.addEventListener('DOMContentLoaded', ev=>{
+	browser.runtime.getPlatformInfo().then(onDOMContentLoaded);
+});
