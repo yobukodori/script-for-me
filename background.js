@@ -1,6 +1,7 @@
 let my = {
 	os : "n/a", // mac|win|android|cros|linux|openbsd
 	defaultTitle: "Script for Me",
+	enableAtStartup: false,
     enabled : false,
 	debug: false,
 	scriptsResource: "",
@@ -19,8 +20,9 @@ let my = {
             my.toggle();
         });
 
-        browser.storage.sync.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
+        browser.storage.local.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
         .then((pref) => {
+			my.enableAtStartup = pref.enableAtStartup || false;
 			my.updateSettings(pref, pref.enableAtStartup);
         });
 
@@ -72,21 +74,18 @@ let my = {
 			my.registered.forEach(r=>{
 				registered.push(r.script)
 			});
-			browser.runtime.sendMessage({
-				type: "status",
-				"status": {
-					enabled: my.enabled,
-					debug: my.debug,
-					scriptsResource: my.scriptsResource,
-					scripts: my.scripts,
-					registered: registered
-				}
+			sendResponse({
+				enabled: my.enabled,
+				debug: my.debug,
+				scriptsResource: my.scriptsResource,
+				scripts: my.scripts,
+				registered: registered
 			});
 		}
-		else if (message.type === "syncAppliedData"){
-			browser.runtime.sendMessage({
-				type: "syncAppliedData",
-				debug: my.debug,
+		else if (message.type === "getSettings"){
+			sendResponse({
+				enableAtStartup: my.enableAtStartup,
+				printDebugInfo: my.debug,
 				scriptsResource: my.scriptsResource
 			});
 		}
@@ -95,9 +94,6 @@ let my = {
 		}
 		else if (message.type === "toggle"){
 			my.toggle();
-		}
-		else {
-			my.log("unknown message type:" + message.type);
 		}
 	},
 	//====================================================
@@ -120,14 +116,35 @@ let my = {
 
         if(my.enabled) {
 			my.scripts.forEach((s,i)=>{
-				let options = Object.assign({}, s.options);
+				let title = s.name ? s.name : "(untitled)";
+				if (my.debug){ my.log("## registering scripts[" + i + "]: " + title + "\n-----------"); }
+				let options = s.options ? Object.assign({}, s.options) : {}, code = s.js, wrapped;
 				options.matches = s.matches;
-				options.js = [{code: s.js}];
+				if (typeof options.wrapCodeInScriptTag !== "undefined"){
+					if (options.wrapCodeInScriptTag){
+						wrapped = true;
+						if (my.debug){ my.log("# wrapping code in script tag."); }
+						let name = "_" + Math.random().toString().substring(2,10);
+						code = '(function(){'
+						+ 'let ' + name + ' = document.createElement("script"); '
+						+ '' + name + '.appendChild(document.createTextNode(' + JSON.stringify(code) + ')); '
+						+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
+						+ '})()';
+					}
+					if (my.debug){ my.log("# deleting options.wrapCodeInScriptTag"); }
+					delete options.wrapCodeInScriptTag;
+				}
+				if (my.debug){
+					my.log("# options: " + JSON.stringify(options));
+					my.log((i === my.scripts.length - 1 ? "----------\n" : "") 
+						+ "# code: " + truncate(code, wrapped ? 300 : 100));
+				}
+				options.js = [{code: code}];
 				try{
 					browser.contentScripts.register(options)
 					.then(registered=>{
-						my.registered.push({script: s, registered: registered});
-						if (my.debug) my.log("Registered scripts[" + i + "]: " + scriptToString(s));
+						my.registered.push({index: i, title: title, script: s, registered: registered});
+						if (my.debug){ my.log("## registered scripts[" + i + "]: " + title); }
 					})
 				}
 				catch(e){
@@ -139,7 +156,7 @@ let my = {
         else {
 			my.registered.forEach((r,i)=>{
 				r.registered.unregister();
-				if (my.debug) my.log("Unregistered registered[" + i + "]: " + scriptToString(r.script));
+				if (my.debug){ my.log("## unregistered scripts[" + r.index + "]: " + r.title);}
 			});
 			my.registered = [];
         }

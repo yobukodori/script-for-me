@@ -1,5 +1,12 @@
 let dummy_log_cleared;
 
+function clearLog()
+{
+	let log = document.querySelector('#log');
+	log.innerHTML = "";
+	log.appendChild(document.createElement("span"));
+}
+
 function log(s)
 {
 	let log = document.querySelector('#log');
@@ -42,6 +49,13 @@ function applySettings(fSave)
 			return;
 		}
 		scripts = res.scripts;
+		if (document.querySelector('#printDebugInfo').checked){
+			for (let i = scripts.length - 1 ; i >= 0 ; i--){
+				log((i === 0 ? "----------\n" : "") 
+					+ "scripts["+i+"] " + scriptToString(scripts[i])
+					+ "\n----------");
+			}
+		}
 	}
 	let pref = {
 		enableAtStartup : document.querySelector('#enableAtStartup').checked,
@@ -52,15 +66,15 @@ function applySettings(fSave)
 		log("warning: All current registered scripts will be removed");
 	}
 	if (fSave){
-		browser.storage.sync.set(pref)
+		browser.storage.local.set(pref)
 		.then(()=>{
 			log("Settings and Scripts Resource saved.");
 		})
 		.catch(e=>{
-			log("Error (storage.sync.set): " + e);
+			log("Error (storage.local.set): " + e);
 		});
 	}
-	log("Applying settings and" + (scripts.length > 0 ? "" : " removing") +  " scripts.");
+	log("Applying settings and" + (scripts.length > 0 ? " " + scripts.length : " removing") +  " scripts.");
 	browser.runtime.sendMessage({type:"updateSettings",pref:pref});
 }
 
@@ -78,21 +92,6 @@ function onMessage(m, sender, sendResponse)
 	if (m.type === "log"){
 		log(m.str);
 	}
-	else if (m.type === "status"){
-		let status = m["status"];
-		for (let i = status.scripts.length - 1 ; i >= 0 ; i--){
-			let s = status.scripts[i];
-			log((s.error ? "Error " : "") + "scripts[" + i + "]: " 
-				+ (s.error ? s.error + '\n' : "") + scriptToString(s));
-		};
-		log("enabled:" + status.enabled + " debug:" + status.debug + " scripts:"
-				+ status.scripts.length + " registered:" + status.registered.length);
-		onStatusChange(status.enabled);
-	}
-	else if (m.type === "syncAppliedData"){
-        document.querySelector('#printDebugInfo').checked = m.debug;
-		document.querySelector('#scriptsResource').value = m.scriptsResource;
-	}
 	else if (m.type === "statusChange"){
 		onStatusChange(m.enabled);
 		log(m.enabled ? "Enabled" : "Disabled");
@@ -101,7 +100,22 @@ function onMessage(m, sender, sendResponse)
 
 function getBackgroundStatus()
 {
-	browser.runtime.sendMessage({type: "getStatus"});
+	browser.runtime.sendMessage({type: "getStatus"})
+	.then(status=>{
+		for (let i = status.scripts.length - 1 ; i >= 0 ; i--){
+			let s = status.scripts[i];
+			log((i === 0 ? "----------\n" : "") 
+				+ (s.error ? "Error " : "") + "scripts[" + i + "]: " 
+				+ (s.error ? s.error + '\n' : "") + scriptToString(s)
+				+ "\n----------");
+		};
+		log("enabled:" + status.enabled + " debug:" + status.debug + " scripts:"
+				+ status.scripts.length + " registered:" + status.registered.length);
+		onStatusChange(status.enabled);
+	})
+	.catch (err=>{
+		log("Error getBackgroundStatus:",err);
+	});
 }
 
 function onDOMContentLoaded()
@@ -128,6 +142,9 @@ function onDOMContentLoaded()
 	document.querySelector('#toggle').addEventListener('click', ev=>{
 		browser.runtime.sendMessage({type: "toggle"});
 	});
+	document.querySelector('#clearLog').addEventListener('click', ev=>{
+		clearLog();
+	});
 
 	let e = document.querySelectorAll(".main, input, textarea, button, #log");
 	for (let i = 0 ; i < e.length ; i++){
@@ -150,11 +167,12 @@ function onDOMContentLoaded()
 		+ '})();'
 		;
 
-    browser.storage.sync.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
-    .then((pref) => {
-        document.querySelector('#enableAtStartup').checked = pref.enableAtStartup || false;
-    });
-	browser.runtime.sendMessage({type: "syncAppliedData"});
+	browser.runtime.sendMessage({type: "getSettings"})
+	.then(v=>{
+        document.querySelector('#enableAtStartup').checked = v.enableAtStartup;
+        document.querySelector('#printDebugInfo').checked = v.printDebugInfo;
+		document.querySelector('#scriptsResource').value = v.scriptsResource;
+	});
 }
 
 document.addEventListener('DOMContentLoaded', onDOMContentLoaded);

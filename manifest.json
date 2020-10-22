@@ -1,7 +1,7 @@
 {
 	"manifest_version" : 2,
 	"name": "Script for Me",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"author": "yobukodori",
 	"description": "Injects JavaScript code into a page.",
 
@@ -20,6 +20,7 @@
 
 	"browser_action" : {
 		"default_title" : "Script for Me",
+		"default_popup": "popup.html",
 		"default_icon"  : {
 			"48" : "icons/button-48-off.png"
 		}
@@ -30,8 +31,6 @@
 		"browser_style": true
 	},
 	
-	// The storage API will not work with a temporary addon ID. 
-	// Please add an explicit addon ID to your manifest.
 	"applications": {
 		"gecko": {
 			"id": "script-for-me@yobukodori"

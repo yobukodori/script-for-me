@@ -1,148 +1,165 @@
+function truncate(str, maxLength){
+	maxLength = maxLength || 100;
+	return str.length > maxLength ? 
+		(str.substring(0, maxLength/2) + " <OMIT> " + str.substring(str.length - maxLength/2))
+		: str;
+}
+
 function isString(v){
 	return typeof v === 'string' || (typeof v !== "undefined" && v instanceof String);
 }
 
-function scriptToString(s)
+function scriptToString(s, maxCodeLength)
 {
-	function truncate(str, maxLength){
-		return str.length > maxLength ? str.substring(0, maxLength) + "..." : str;
-	}
+	maxCodeLength = maxCodeLength || 100;
 	if (s == null){
 		return "(null)";
 	}
-	if (! s.matches){
+	if (s.js == null){
 		return "(not script)";
 	}
-	return "matches: " + s.matches.join() + '\n'
-			+ "options: " + JSON.stringify(s.options) + '\n'
-			+ "js: " + truncate(s.js, 100);
+	return (s.name != null ? "name: " + (s.name ? s.name : "(untitled)") + "\n" : "")
+			+ (s.matches ? "matches: [" + s.matches + "]\n" : "")
+			+ (s.options ? "options: " + JSON.stringify(s.options) + "\n" : "")
+			+ ("js: " + truncate(s.js, maxCodeLength));
 }
 
 function parseScriptsResource(scriptsResource)
 {
-	function isDirective(line, name){
-		return new RegExp("^//" + name + "(\\s.*)?$").test(line);
+	function what(s){
+		if (typeof s === "undefined"){
+			return {type: "directive", name: "eof"};;
+		}
+		if (/^\/\/[;#\-=\*]/.test(s)){
+			return { type: "comment" };
+		}
+		let r = s.match(/^\/\/([a-z]\w+)(\s|$)/i);
+		if (r){
+			let name = r[1].toLowerCase(), value = s.substring(r[1].length+2).trim();
+			return {type: "directive", name: name, value: value}; 
+		}
+		return { type: "code" }; 
 	}
-	let res = {error:"not implemented", line:0, scripts:[]};
+	let res = {error: null, line: 0, scripts: []};
 	if (! isString(scriptsResource)){
 		res.error = "scriptsResource must be string: " + typeof scriptsResource;
 		return res;
 	}
-	let a = scriptsResource.split('\n');
-	const initial = 0, after_matches = 1, after_options = 2, after_js = 3;
-	let state = initial, directive = "n/a", script;
-	for (let i = 0 ; i < a.length ; i++){
-		let s = a[i], r = s.match(/^\/\/(\w+)\b/);
-		if (r && ! ["matches","options","js"].includes(r[1])){
-			res.line = i + 1;
-			res.error = "unknown directive //" + r[1];
-			return res;
+	let rules = {
+		initial: {
+			followingDirectives: ["name", "matches", "options", "js"],
+		},
+		name: {
+			has: "value",
+			followingDirectives: ["matches", "options", "js"],
+		},
+		matches: {
+			required: true,
+			has: "value",
+			type: "comma separated",
+			defaultValue: ["https://*/*", "http://*/*"],
+			followingDirectives: ["options", "js"],
+		},
+		options: {
+			has: "code",
+			type: "json",
+			followingDirectives: ["js"],
+		},
+		js: {
+			closeScript: true,
+			required: true,
+			has: "code",
+			followingDirectives: ["name", "matches", "options", "js"],
 		}
-		switch (state){
-		case initial:
-			if (isDirective(s, "matches")){
-				res.line = i + 1;
-				directive = "//matches";
-				script = {
-					matches: s.substring(9).split(',').map(v=>v.trim()).filter(v=>v.length > 0), 
-					options: [],
-					js: []
-				};
-				if (script.matches.length === 0){
-					res.error = "//matches requires url";
-					return res;
-				}
-				res.scripts.push(script);
-				state = after_matches;
-				continue;
-			}
-			else if (isDirective(s, "options") || isDirective(s, "js")){
-				res.line = i + 1;
-				res.error = "the first directive must be //matches.";
-				return res;
-			}
+	};
+	Object.keys(rules).forEach(k=>{ rules[k].name = k; });
+	let a = scriptsResource.split('\n'), script, rule = rules.initial;
+	if (a.length > 0 && a[a.length - 1].length === 0){
+		a.pop();
+	}
+	for (let i = 0 ; i <= a.length ; i++){
+		res.line = i + 1;
+		let s = a[i], w = what(s);
+		if (w.type === "comment"){
 			continue;
-		case after_matches:
-			if (isDirective(s, "options")){
-				res.line = i + 1;
-				directive = "//options";
-				state = after_options;
-				continue;
+		}
+		if (w.type === "directive"){
+			if (rule.has === "code"){
+				script[rule.name] = script[rule.name].join('\n');
 			}
-			else if (isDirective(s, "js")){
-				res.line = i + 1;
-				directive = "//js";
-				script.options = {};
-				state = after_js;
-				continue;
-			}
-			else if (isDirective(s, "matches")){
-				res.line = i + 1;
-				res.error = "unexpected directive.";
-				return res;
-			}
-			continue;
-		case after_options:
-			if (isDirective(s, "js")){
-				script.options = script.options.join('\n');
-				if (/\S/.test(script.options)){
+			if (rule.type === "json"){
+				let json = script[rule.name];
+				if (json.trim().length > 0){
 					try {
-						script.options = JSON.parse(script.options);
+						script[rule.name] = JSON.parse(json);
 					}
 					catch (e){
-						res.line++;
 						res.error = e.message;
-						return res;
+						break;
 					}
 				}
 				else {
-					script.options = {};
+					script[rule.name] = {};
 				}
-				res.line = i + 1;
-				directive = "//js";
-				state = after_js;
-				continue;
 			}
-			else if (isDirective(s, "matches") || isDirective(s, "options")){
-				res.line = i + 1;
-				res.error = "unexpected directive.";
-				return res;
+			else if (rule.type === "comma separated"){
+				script[rule.name] = script[rule.name].split(',').map(e=>e.trim()).filter(e=>e.length > 0);
 			}
-			script.options.push(s);
-			continue;
-		case after_js:
-			if (i + 1 === a.length){
-				script.js.push(s);
-				script.js = script.js.join('\n');
-				state = initial;
+			if (rule.closeScript){
+				Object.keys(rules).forEach(k=>{
+					if (rules[k].required && typeof script[k] === "undefined"){
+						if (typeof rules[k].defaultValue !== "undefined"){
+							script[k] = rules[k].defaultValue;
+						}
+						else {
+							res.error = "//" + k + " is required.";
+						}
+					}
+				});
+				if (res.error){
+					break;
+				}
+				script = null;
+			}
+			if (w.name === "eof")
+				break;
+		}
+		if (w.type === "directive"){
+			if (! rule.followingDirectives.includes(w.name)){
+				res.error = "unexpected directive //" + w.name;
 				break;
 			}
-			else if (isDirective(s, "matches")){
-				script.js = script.js.join('\n');
-				state = initial;
-				--i;
-				continue;
+			rule = rules[w.name];
+			if (! script){
+				script = {};
+				res.scripts.push(script);
 			}
-			else if (isDirective(s, "options") || isDirective(s, "js")){
-				res.line = i + 1;
-				res.error = "unexpected directive.";
-				return res;
+			if (typeof script[rule.name] !== "undefined"){
+				res.error = "//" + rule.name + " has been defined multiple times."
+				break;
 			}
-			script.js.push(s);
-			continue;
+			if (rule.has === "value"){
+				if (! w.value){
+					res.error = "//" + rule.name + " requires value";
+					break;
+				}
+				script[rule.name] = w.value;
+			}
+			else if (rule.has === "code"){
+				script[rule.name] = [];
+			}
 		}
-	}
-	if (state === initial){
-		res.error = "";
-	}
-	else {
-		if (directive === "//matches"){
-			res.error = "//matches must be followed by //options or //js";
+		else if (w.type === "code"){
+			if (rule.has !== "code"){
+				res.error = "unexpected code line.";
+				break;
+			}
+			script[rule.name].push(s);
 		}
-		else if (directive === "//options"){
-			res.error = "//options must be followed by //js";
+		else {
+			res.error = "unknown line type " + w.type;
+			break;
 		}
 	}
 	return res;
 }
-

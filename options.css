@@ -46,6 +46,11 @@ button {
 	border-color: black;
 }
 
+#log {
+	padding: 0.5em;
+	overflow: auto;
+}
+
 span.error {
 	background-color: pink;
 	font-weight: bold;
