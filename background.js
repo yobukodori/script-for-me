@@ -28,7 +28,6 @@ let my = {
 
         browser.storage.local.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
         .then((pref) => {
-			my.enableAtStartup = pref.enableAtStartup || false;
 			my.updateSettings(pref, pref.enableAtStartup);
 			my.initialized = true;
         })
@@ -43,6 +42,7 @@ let my = {
 	updateSettings : function(pref, fEnable)
 	{
 		let disabled;
+		my.enableAtStartup = pref.enableAtStartup || false;
 		my.debug = pref.printDebugInfo || false;
 		if (typeof pref.scriptsResource === "string"){
 			if (pref.scriptsResource !== my.scriptsResource){
