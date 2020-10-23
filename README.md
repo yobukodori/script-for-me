@@ -9,7 +9,7 @@
 - **Script Resource**: Scripts to inject.    
   1. Each script begins with the //matches directive.  
 The //matches directive specifies a comma-separated list of [URL patterns](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns) for the pages where you want to inject the script.  
-If the //matches directive are omitted, then ` https://*/*, http://*/* ` is used as the default value.
+If the //matches directive are omitted, then ` *://*/* ` is used as the default value.
         ```
         //matches https://www.google.com/*, https://github.com/*
         //js
