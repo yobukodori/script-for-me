@@ -1,12 +1,26 @@
+#alert { 
+	position: fixed;
+	 top: 30%;
+	 left: 50%;
+	 transform: translate(-50%,-50%);
+	 padding: 0.5em 1em;
+	 background-color: #ffff88;
+	 border: solid;
+	 min-width: 200px
+}
+
+ #alert .message {
+}
+
 body{
 	background-color: #f7f7f7;
 }
 
-.main.pc {
+body.pc {
 	font-size: large;
 }
 
-.main.mobile {
+body.mobile {
 	font-size: 15px;
 }
 

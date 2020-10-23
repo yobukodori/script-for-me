@@ -1,12 +1,18 @@
 let my = {
 	os : "n/a", // mac|win|android|cros|linux|openbsd
 	defaultTitle: "Script for Me",
+	initialized: false,
 	enableAtStartup: false,
     enabled : false,
 	debug: false,
 	scriptsResource: "",
 	scripts: [],
 	registered: [],
+	errors: [],
+	//====================================================
+    error : function(msg, where) {
+		my.errors.push({message: msg, where: where});
+	},
 	//====================================================
     init : function(platformInfo) 
 	{
@@ -24,7 +30,9 @@ let my = {
         .then((pref) => {
 			my.enableAtStartup = pref.enableAtStartup || false;
 			my.updateSettings(pref, pref.enableAtStartup);
-        });
+			my.initialized = true;
+        })
+		.catch(err => my.error(err, "storage.local.get"));
 
         // update button
         my.updateButton();
@@ -84,9 +92,15 @@ let my = {
 		}
 		else if (message.type === "getSettings"){
 			sendResponse({
+				initialized: my.initialized,
 				enableAtStartup: my.enableAtStartup,
 				printDebugInfo: my.debug,
 				scriptsResource: my.scriptsResource
+			});
+		}
+		else if (message.type === "getError"){
+			sendResponse({
+				error: my.errors
 			});
 		}
 		else if (message.type === "updateSettings"){

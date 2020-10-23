@@ -1,4 +1,22 @@
-let dummy_log_cleared;
+function alert(msg){
+	const id = "alert";
+	let e = document.getElementById(id);
+	if(! e){
+		e = document.createElement("div");
+		e.id = id;
+		document.addEventListener("click", ev=> e.remove());
+		document.body.appendChild(e);
+	}
+	let m = document.createElement("div");
+	m.classList.add("message");
+	msg.split("\n").forEach((line,i) =>{
+		if (i > 0){ m.appendChild(document.createElement("br")); }
+		let span = document.createElement("span");
+		span.appendChild(document.createTextNode(line));
+		m.appendChild(span);
+	});
+	e.appendChild(m);
+}
 
 function clearLog()
 {
@@ -6,6 +24,12 @@ function clearLog()
 	log.innerHTML = "";
 	log.appendChild(document.createElement("span"));
 }
+
+function verbose(){
+	return document.querySelector('#printDebugInfo').checked;
+}
+
+let dummy_log_cleared;
 
 function log(s)
 {
@@ -49,7 +73,7 @@ function applySettings(fSave)
 			return;
 		}
 		scripts = res.scripts;
-		if (document.querySelector('#printDebugInfo').checked){
+		if (verbose()){
 			for (let i = scripts.length - 1 ; i >= 0 ; i--){
 				log((i === 0 ? "----------\n" : "") 
 					+ "scripts["+i+"] " + scriptToString(scripts[i])
@@ -78,12 +102,11 @@ function applySettings(fSave)
 	browser.runtime.sendMessage({type:"updateSettings",pref:pref});
 }
 
-let g_is_android = navigator.userAgent.indexOf('Android') > 0,	g_is_pc = ! g_is_android;
-
 function onStatusChange(fEnabled)
 {
 	let e = document.querySelector('#toggle');
-	e.className = (fEnabled ? "on" : "off") + " " + (g_is_pc ? "pc" : "mobile");
+	e.classList.remove(fEnabled ? "off" : "on");
+	e.classList.add(fEnabled ? "on" : "off");
 	e.innerText = fEnabled ? "Off (Now On)" : "On (Now Off)";
 }
 
@@ -102,25 +125,26 @@ function getBackgroundStatus()
 {
 	browser.runtime.sendMessage({type: "getStatus"})
 	.then(status=>{
-		for (let i = status.scripts.length - 1 ; i >= 0 ; i--){
-			let s = status.scripts[i];
-			log((i === 0 ? "----------\n" : "") 
-				+ (s.error ? "Error " : "") + "scripts[" + i + "]: " 
-				+ (s.error ? s.error + '\n' : "") + scriptToString(s)
-				+ "\n----------");
-		};
+		if (verbose()){
+			for (let i = status.scripts.length - 1 ; i >= 0 ; i--){
+				let s = status.scripts[i];
+				log((i === 0 ? "----------\n" : "") 
+					+ (s.error ? "Error " : "") + "scripts[" + i + "]: " 
+					+ (s.error ? s.error + '\n' : "") + scriptToString(s)
+					+ "\n----------");
+			};
+		}
 		log("enabled:" + status.enabled + " debug:" + status.debug + " scripts:"
 				+ status.scripts.length + " registered:" + status.registered.length);
 		onStatusChange(status.enabled);
 	})
 	.catch (err=>{
-		log("Error getBackgroundStatus:",err);
+		alert("Error on getStatus: " + err);
 	});
 }
 
-function onDOMContentLoaded()
-{
-	getBackgroundStatus();
+function onDOMContentLoaded(platformInfo){
+	let os = platformInfo.os, is_mobile = os === "android", is_pc = ! is_mobile;
 	document.querySelector("#scriptsResource").addEventListener('keydown', ev=>{
 		if (ev.key == 'Tab') {
 			ev.preventDefault();
@@ -146,34 +170,41 @@ function onDOMContentLoaded()
 		clearLog();
 	});
 
-	let e = document.querySelectorAll(".main, input, textarea, button, #log");
-	for (let i = 0 ; i < e.length ; i++){
-		e[i].classList.add(g_is_pc ? "pc" : "mobile");
-	}
+	document.querySelectorAll("body, input, textarea, button, #log").forEach(e=>{
+		e.classList.add(is_pc ? "pc" : "mobile");
+	});
 	document.getElementById("scriptsResource").placeholder = ''
 		+ '//matches https://www.google.com/*\n'
 		+ '//js\n'
 		+ '(function(){\n'
-		+ '    "1st script";\n'
-		+ '})();\n'
-		+ '//matches https://github.com/*,https://bit.ly/*\n'
-		+ '//options\n'
-		+ '{\n'
-		+ '    "runAt": "document_start"\n'
-		+ '}\n'
-		+ '//js\n'
-		+ '(function(){\n'
-		+ '    "2nd script";\n'
+		+ '    // code\n'
 		+ '})();'
 		;
 
+	getBackgroundStatus();
 	browser.runtime.sendMessage({type: "getSettings"})
 	.then(v=>{
-        document.querySelector('#enableAtStartup').checked = v.enableAtStartup;
-        document.querySelector('#printDebugInfo').checked = v.printDebugInfo;
-		document.querySelector('#scriptsResource').value = v.scriptsResource;
+		if (v.initialized){
+			document.querySelector('#enableAtStartup').checked = v.enableAtStartup;
+			document.querySelector('#printDebugInfo').checked = v.printDebugInfo;
+			document.querySelector('#scriptsResource').value = v.scriptsResource;
+		}
+		else {
+			alert("Error on getSettings: background is not initialized. See log.");
+			browser.runtime.sendMessage({type: "getError"})
+			.then(v=>{
+				v.error.forEach(e=>{
+					log("Error in background: " + e.message + " on " + e.where);
+				});
+			});
+		}
+	})
+	.catch(err=>{
+		alert("Error on getSettings: " + err);
 	});
 }
 
-document.addEventListener('DOMContentLoaded', onDOMContentLoaded);
 browser.runtime.onMessage.addListener(onMessage);
+document.addEventListener('DOMContentLoaded', ev=>{
+	browser.runtime.getPlatformInfo().then(onDOMContentLoaded);
+});

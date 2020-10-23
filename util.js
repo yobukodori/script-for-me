@@ -57,7 +57,7 @@ function parseScriptsResource(scriptsResource)
 			required: true,
 			has: "value",
 			type: "comma separated",
-			defaultValue: ["https://*/*", "http://*/*"],
+			defaultValue: ["*://*/*"],
 			followingDirectives: ["options", "js"],
 		},
 		options: {
