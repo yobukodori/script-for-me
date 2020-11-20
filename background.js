@@ -8,35 +8,36 @@ let my = {
 	scriptsResource: "",
 	scripts: [],
 	registered: [],
-	errors: [],
-	//====================================================
-    error : function(msg, where) {
-		my.errors.push({message: msg, where: where});
-	},
 	//====================================================
     init : function(platformInfo) 
 	{
-		let man = browser.runtime.getManifest();
-		if (man.browser_action && man.browser_action.default_title){
-			my.defaultTitle = man.browser_action.default_title;
-		}
-		my.os = platformInfo.os;
+		my.initialized = new Promise((resolve, reject)=>{
+			try {
+				let man = browser.runtime.getManifest();
+				if (man.browser_action && man.browser_action.default_title){
+					my.defaultTitle = man.browser_action.default_title;
+				}
+				my.os = platformInfo.os;
 
-        browser.browserAction.onClicked.addListener(function(){
-            my.toggle();
-        });
+				browser.browserAction.onClicked.addListener(function(){
+					my.toggle();
+				});
+				my.updateButton();
+				browser.runtime.onMessage.addListener(my.onMessage);
 
-        browser.storage.local.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
-        .then((pref) => {
-			my.updateSettings(pref, pref.enableAtStartup);
-			my.initialized = true;
-        })
-		.catch(err => my.error(err, "storage.local.get"));
-
-        // update button
-        my.updateButton();
-		
-		browser.runtime.onMessage.addListener(my.onMessage);
+				browser.storage.local.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
+				.then((pref) => {
+					my.updateSettings(pref, pref.enableAtStartup);
+					resolve();
+				})
+				.catch(err=>{
+					reject(err);
+				});
+			}
+			catch(e){
+				reject(e.message);
+			}
+		});
     },
 	//====================================================
 	updateSettings : function(pref, fEnable)
@@ -91,17 +92,26 @@ let my = {
 			});
 		}
 		else if (message.type === "getSettings"){
-			sendResponse({
-				initialized: my.initialized,
-				enableAtStartup: my.enableAtStartup,
-				printDebugInfo: my.debug,
-				scriptsResource: my.scriptsResource
-			});
-		}
-		else if (message.type === "getError"){
-			sendResponse({
-				error: my.errors
-			});
+			if (my.initialized){
+				my.initialized.then(()=>{
+					sendResponse({
+						enableAtStartup: my.enableAtStartup,
+						printDebugInfo: my.debug,
+						scriptsResource: my.scriptsResource
+					});
+				})
+				.catch(err=>{
+					sendResponse({
+						error: err,
+					});
+				});
+				return true;
+			}
+			else {
+				sendResponse({
+					error: "background.js has not been initialized yet.",
+				});
+			}
 		}
 		else if (message.type === "updateSettings"){
 			my.updateSettings(message.pref);
