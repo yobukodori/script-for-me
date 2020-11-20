@@ -49,11 +49,16 @@ Internally convert it to the following code and execute it. Actually, the variab
         ```
   1. Other directives. (Optional)  
   **//name**: This can be placed before the //matches directive.  
+  **//disable**: disable this script. In case you don't use the script but want to keep it.  
   **//eof**: Ignore the lines that follow.    
   **//[-=*;#]**: Comment line.    
         ```
-        //##########################
-        //name Beautify the page  
+        //name Obsolete script  
+        //matches https://obsolete.site/*
+        //disable
+        //js  
+        (function(){/* code */})();  
+        //===========================
         //matches *://abitdirtypage.com/*  
         //# comment
         ...  
