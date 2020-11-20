@@ -61,7 +61,7 @@ Internally convert it to the following code and execute it. Actually, the variab
         //===========================
         //matches *://abitdirtypage.com/*  
         //# comment
-        ...  
+        //js  
         (function(){/* code */})();  
         //---------------------------  
         //; comment  
