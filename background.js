@@ -144,7 +144,18 @@ let my = {
 				if (my.debug){ my.log("## registering scripts[" + i + "]: " + title + "\n-----------"); }
 				let options = s.options ? Object.assign({}, s.options) : {}, code = s.js, wrapped;
 				options.matches = s.matches;
-				if (typeof options.wrapCodeInScriptTag !== "undefined"){
+				if (/^https?:/.test(code.trim())){
+					wrapped = true;
+					let src = code.trim().match(/^(https?:\S*)/)[1];
+					if (my.debug){my.log("# wrapping exteranl script using a script tag: " + src);}
+					let name = "_" + Math.random().toString().substring(2,10);
+					code = '(function(){'
+					+ 'let ' + name + ' = document.createElement("script");'
+					+ '' + name + '.src="' + src + '";'
+					+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
+					+ '})()';
+				}
+				else if (typeof options.wrapCodeInScriptTag !== "undefined"){
 					if (options.wrapCodeInScriptTag){
 						wrapped = true;
 						if (my.debug){ my.log("# wrapping code in script tag."); }
@@ -155,6 +166,8 @@ let my = {
 						+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
 						+ '})()';
 					}
+				}
+				if (typeof options.wrapCodeInScriptTag !== "undefined"){
 					if (my.debug){ my.log("# deleting options.wrapCodeInScriptTag"); }
 					delete options.wrapCodeInScriptTag;
 				}
