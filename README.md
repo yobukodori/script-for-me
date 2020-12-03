@@ -47,6 +47,20 @@ Internally convert it to the following code and execute it. Actually, the variab
           alert("hello");
         })();
         ```
+  1. Simply write the URL and you can inject the script.  
+        ```
+        //js  
+        https://yobukodori.github.io/foo.js  
+        ```
+        Internally convert it to the following code and execute it.  
+        ```
+        (function() {  
+          let script = document.createElement("script");  
+          script.src = "https://yobukodori.github.io/foo.js";  
+          document.documentElement.appendChild(script);  
+          script.remove();  
+        })();  
+        ```
   1. Other directives. (Optional)  
   **//name**: This can be placed before the //matches directive.  
   **//disable**: disable this script. In case you don't use the script but want to keep it.  
