@@ -7,7 +7,10 @@ let my = {
 	debug: false,
 	scriptsResource: "",
 	scripts: [],
+	scriptCount: 0,
+	modules: {},
 	registered: [],
+	cache: {},
 	//====================================================
     init : function(platformInfo) 
 	{
@@ -55,17 +58,21 @@ let my = {
 				if (res.error){
 					my.scriptsResource = "";
 					my.scripts = [];
+					my.scriptCount = 0;
+					my.modules = {};
 					my.log("error" + (res.line > 0 ? " line " + res.line : "") + ": " + res.error);
 				}
 				else {
 					my.scriptsResource = pref.scriptsResource;
 					my.scripts = res.scripts;
+					my.scriptCount = res.scriptCount;
+					my.modules = res.modules;
 				}
 				my.log('my.scripts changed');
 			}
 		}
 		if (disabled || (fEnable && ! my.enabled)){
-			if (my.scripts.length > 0){
+			if (my.scriptCount > 0){
 				my.toggle(true);
 			}
 		}
@@ -121,6 +128,106 @@ let my = {
 		}
 	},
 	//====================================================
+	get: function (url){
+		if (url in my.cache){
+			return Promise.resolve(my.cache[url]);
+		}
+		return new Promise((resolve, reject)=>{
+			if (my.debug){my.log("# fetching " + url);}
+			fetch(url)
+			.then(res=>{
+				return res.ok ? res.text() : Promise.reject(res.status + ' ' + res.statusText);
+			})
+			.then(text=>{ resolve(my.cache[url] = text); })
+			.catch(err=>{ reject(err); });
+		});
+	},
+	//====================================================
+    registerScripts : async function() 
+	{
+		let scripts = my.scripts.filter(s=> ! s.module);
+		//scripts.forEach(async (s,i)=>{
+		for (let i = 0 ; i < scripts.length ; i++){
+			let s = scripts[i];
+			let title = s.name ? s.name : "(untitled)";
+			if (my.debug){ my.log("## registering scripts[" + s._index + "]: " + title + "\n-----------"); }
+			let options = s.options ? Object.assign({}, s.options) : {}, code = "", wrapped;
+			options.matches = s.matches;
+			if (s.require){
+				for (let i = 0 ; i < s.require.length ; i++){
+					let moduleName = s.require[i], url = moduleName;
+					if (/^https?:/.test(url )){
+						try {
+							code += await my.get(url) + "\n";
+						}
+						catch(err){
+							s.error = "" + err;
+							my.log("Error: " + err + " while fetching " + url);
+							return;
+						}
+					}
+					else {
+						code += my.modules[moduleName] + "\n";
+					}
+				}
+			}
+			let url = s.js.trim();
+			if (/^https?:/.test(url)){
+				try {
+					code += await my.get(url) + "\n";
+				}
+				catch(err){
+					s.error = "" + err;
+					my.log("Error: " + err + " while fetching " + url);
+					return;
+				}
+			}
+			else {
+				code += s.js;
+			}
+			if (typeof options.wrapCodeInScriptTag !== "undefined"){
+				if (options.wrapCodeInScriptTag){
+					wrapped = true;
+					if (my.debug){ my.log("# wrapping code in script tag."); }
+					let name = "_" + Math.random().toString().substring(2,10);
+					code = '(function(){'
+					+ 'let ' + name + ' = document.createElement("script"); '
+					+ '' + name + '.appendChild(document.createTextNode(' + JSON.stringify(code) + ')); '
+					+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
+					+ '})()';
+				}
+			}
+			if (typeof options.wrapCodeInScriptTag !== "undefined"){
+				if (my.debug){ my.log("# deleting options.wrapCodeInScriptTag"); }
+				delete options.wrapCodeInScriptTag;
+			}
+			if (my.debug){
+				my.log("# options: " + JSON.stringify(options));
+				my.log((i === scripts.length - 1 ? "----------\n" : "") 
+					+ "# code: " + truncate(code, wrapped ? 300 : 100));
+			}
+			options.js = [{code: code}];
+			try{
+				my.registered.push({index: s._index, title: title, script: s,
+					registered: await browser.contentScripts.register(options)});
+				if (my.debug){ my.log("## registered scripts[" + s._index + "]: " + title); }
+			}
+			catch(e){
+				s.error = e.message;
+				my.log("Error scripts[" + s._index + "]: " + e.message);
+			}
+		}
+	},
+	//====================================================
+    unregisterScripts : function() 
+	{
+		my.registered.forEach(r=>{
+			r.registered.unregister();
+			if (my.debug){ my.log("## unregistered scripts[" + r.index + "]: " + r.title);}
+		});
+		my.registered = [];
+	},
+	//====================================================
     toggle : function(state) 
 	{
         if(typeof state === 'boolean') {
@@ -128,7 +235,7 @@ let my = {
         }
         else {
 			if (my.enabled = ! my.enabled){
-				if (my.scripts.length === 0){
+				if (my.scriptCount === 0){
 					my.enabled = false;
 					my.log("error: no scripts");
 					return;
@@ -139,66 +246,22 @@ let my = {
         my.updateButton();
 
         if(my.enabled) {
-			my.scripts.forEach((s,i)=>{
-				let title = s.name ? s.name : "(untitled)";
-				if (my.debug){ my.log("## registering scripts[" + i + "]: " + title + "\n-----------"); }
-				let options = s.options ? Object.assign({}, s.options) : {}, code = s.js, wrapped;
-				options.matches = s.matches;
-				if (/^https?:/.test(code.trim())){
-					wrapped = true;
-					let src = code.trim().match(/^(https?:\S*)/)[1];
-					if (my.debug){my.log("# wrapping exteranl script using a script tag: " + src);}
-					let name = "_" + Math.random().toString().substring(2,10);
-					code = '(function(){'
-					+ 'let ' + name + ' = document.createElement("script");'
-					+ '' + name + '.src="' + src + '";'
-					+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
-					+ '})()';
+			my.registerScripts().then(()=>{
+				if (my.registered.length > 0){
+					browser.runtime.sendMessage({
+						type:"statusChange", enabled:my.enabled });
 				}
-				else if (typeof options.wrapCodeInScriptTag !== "undefined"){
-					if (options.wrapCodeInScriptTag){
-						wrapped = true;
-						if (my.debug){ my.log("# wrapping code in script tag."); }
-						let name = "_" + Math.random().toString().substring(2,10);
-						code = '(function(){'
-						+ 'let ' + name + ' = document.createElement("script"); '
-						+ '' + name + '.appendChild(document.createTextNode(' + JSON.stringify(code) + ')); '
-						+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
-						+ '})()';
-					}
-				}
-				if (typeof options.wrapCodeInScriptTag !== "undefined"){
-					if (my.debug){ my.log("# deleting options.wrapCodeInScriptTag"); }
-					delete options.wrapCodeInScriptTag;
-				}
-				if (my.debug){
-					my.log("# options: " + JSON.stringify(options));
-					my.log((i === my.scripts.length - 1 ? "----------\n" : "") 
-						+ "# code: " + truncate(code, wrapped ? 300 : 100));
-				}
-				options.js = [{code: code}];
-				try{
-					browser.contentScripts.register(options)
-					.then(registered=>{
-						my.registered.push({index: i, title: title, script: s, registered: registered});
-						if (my.debug){ my.log("## registered scripts[" + i + "]: " + title); }
-					})
-				}
-				catch(e){
-					s.error = e.message;
-					my.log("Error scripts[" + i + "]: " + e.message);
+				else {
+					my.enabled = false;
+					my.updateButton();
 				}
 			});
 		}
         else {
-			my.registered.forEach((r,i)=>{
-				r.registered.unregister();
-				if (my.debug){ my.log("## unregistered scripts[" + r.index + "]: " + r.title);}
-			});
-			my.registered = [];
+			my.unregisterScripts();
+			browser.runtime.sendMessage({
+				type:"statusChange", enabled:my.enabled });
         }
-		browser.runtime.sendMessage({
-			type:"statusChange", enabled:my.enabled });
     },
 	//====================================================
     updateButton : function() 

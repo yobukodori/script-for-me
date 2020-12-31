@@ -65,7 +65,7 @@ function applySettings(fSave)
 	if (! /\S/.test(scriptsResource)){
 		scriptsResource = "";
 	}
-	let scripts = [];
+	let scripts = [], scriptCount = 0, moduleCount = 0;
 	if (scriptsResource){
 		let res = parseScriptsResource(scriptsResource);
 		if (res.error){
@@ -73,6 +73,8 @@ function applySettings(fSave)
 			return;
 		}
 		scripts = res.scripts;
+		scriptCount = res.scriptCount;
+		moduleCount = res.moduleCount;
 		if (verbose()){
 			for (let i = scripts.length - 1 ; i >= 0 ; i--){
 				log((i === 0 ? "----------\n" : "") 
@@ -86,7 +88,7 @@ function applySettings(fSave)
 		printDebugInfo : document.querySelector('#printDebugInfo').checked,
 		scriptsResource : scriptsResource
 	};
-	if (scripts.length === 0){
+	if (scriptCount === 0){
 		log("warning: All current registered scripts will be removed");
 	}
 	if (fSave){
@@ -98,7 +100,10 @@ function applySettings(fSave)
 			log("Error (storage.local.set): " + e);
 		});
 	}
-	log("Applying settings and" + (scripts.length > 0 ? " " + scripts.length : " removing") +  " scripts.");
+	log("Applying settings" 
+		+ " and " + (scriptCount > 0 ? scriptCount : "removing") +  " scripts."
+		+ (moduleCount > 0 ? " And applying " + moduleCount + " modules." : ".")
+	);
 	browser.runtime.sendMessage({type:"updateSettings",pref:pref});
 }
 
