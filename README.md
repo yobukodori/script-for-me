@@ -39,6 +39,18 @@ Internally convert it to the following code and execute it. Actually, the variab
           script.remove();  
         })();  
         ```
+  1. Content scripts and Page scripts  
+  See [Content script environment](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#Content_script_environment).  
+  This add-on executes the code as a content scripts.  
+  To execute the code in the context of a page scripts, inject a script tag that wraps the code. The option **wrapCodeInScriptTag** does this for you.  
+  **Without wrapCodeInScriptTag option**  
+    [advantage]  
+    　i. Can execute external script file specified in the //js section without CSP restrictions.  
+    　ii. Can read cross-origin resources with xhr/fetch without CORS restrictions.  
+    [disadvantage]  
+    　i. Can't access the variables/functions/objects, etc. defined by the page script.   
+  **With wrapCodeInScriptTag option**  
+  You can access the variables/functions/objects, etc. defined by the page scripts. However, the above restrictions of CSP and CORS will apply.  
   1. Finally, write the code with the //js directive.  
   **[NOTE] Doesn't check the syntax of the code, so please paste the code that has been tested to work.**  
         ```
@@ -48,6 +60,7 @@ Internally convert it to the following code and execute it. Actually, the variab
         })();
         ```
   1. Simply write the URL and you can inject the script.  
+  This add-on itself reads the script from the URL and executes the loaded code.  
         ```
         //js  
         https://yobukodori.github.io/foo.js  
