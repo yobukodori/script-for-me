@@ -59,7 +59,7 @@ function log(s)
 	}
 }
 
-function applySettings(fSave)
+async function applySettings(fSave)
 {
 	let scriptsResource = document.querySelector('#scriptsResource').value;
 	if (! /\S/.test(scriptsResource)){
@@ -67,9 +67,20 @@ function applySettings(fSave)
 	}
 	let scripts = [], scriptCount = 0, moduleCount = 0;
 	if (scriptsResource){
-		let res = parseScriptsResource(scriptsResource);
+		let res = await parseScriptsResourceAsync(scriptsResource, function(url){
+			return new Promise((resolve, reject)=>{
+				browser.runtime.sendMessage({type: "httpGet", url})
+				.then(data =>{
+					data.error ? reject(data.error) : resolve(data.text);
+				})
+				.catch (err=>{
+					reject("Error on httpGet: " + err);
+				});
+			});
+		});
 		if (res.error){
-			log("error" + (res.line > 0 ? " line " + res.line : "") + ": " + res.error);
+			let e = res.error;
+			log("error: " + e.message + " at " + e.source + ":" + (e.line > 0 ? e.line : "n/a"));
 			return;
 		}
 		scripts = res.scripts;

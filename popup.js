@@ -1,11 +1,18 @@
 function onDOMContentLoaded(platformInfo){
-	let os = platformInfo.os, is_mobile = os === "android", is_pc = ! is_mobile;
+	let os = platformInfo.os, is_mobile = os === "android", is_pc = ! is_mobile,
+		enableFuture = document.querySelector('#enable-future'),
+		scriptList = document.querySelector('#script-list');
 	function error(msg){
 		let e = document.createElement("div");
 		e.appendChild(document.createTextNode("Error: " + msg));
 		document.body.insertBefore(e, document.body.firstChild);
 	}
-	document.querySelector('#enable-future').addEventListener('change', ev=>{
+	function onEnableFutureChange(enable){
+		enableFuture.checked = enable;
+		scriptList.querySelectorAll("input").forEach(e => e.disabled = ! enable);
+		enable ? scriptList.classList.remove("gray") : scriptList.classList.add("gray");
+	}
+	enableFuture.addEventListener('change', ev=>{
 		browser.runtime.sendMessage({type: "toggle"});
 	});
 	document.querySelector('#settings').addEventListener('click', ev=>{
@@ -45,14 +52,39 @@ function onDOMContentLoaded(platformInfo){
 
 	browser.runtime.sendMessage({type: "getStatus"})
 	.then(status=>{
-		let checkbox = document.querySelector('#enable-future');
-		checkbox.checked = status.enabled;
+		enableFuture.checked = status.enabled;
 		if (status.scripts.length === 0){
-			checkbox.disabled = true;
+			enableFuture.disabled = true;
 			document.querySelector('label[for="enable-future"]').classList.add("gray");
+		}
+		else {
+			status.scripts.forEach(s =>{
+				let id = "s" + s._index, name = s.name || "script[" + s._index + "]";
+				let item = document.createElement("div"), e;
+				e = document.createElement("input"), e.type = "checkbox", e.id = id,
+					 (e.checked = !! s?.data?.registered), e.addEventListener('change', ev=>{
+						browser.runtime.sendMessage({type: "enableScript", index: s._index, enable: ev.target.checked});
+					}), item.appendChild(e);
+				e = document.createElement("label"),  e.setAttribute("for", id), 
+					e.textContent = name, item.appendChild(e);
+				scriptList.appendChild(item);
+			});
+			onEnableFutureChange(status.enabled);
 		}
 	})
 	.catch(error);
+	
+	browser.runtime.onMessage.addListener((message, sender, sendResponse)=>{
+		if (message.type === "statusChange"){
+			onEnableFutureChange(message.enabled);
+		}
+		else if (message.type === "registeredChange"){
+			scriptList.querySelectorAll("input").forEach(e =>{
+				let index = e.id.substring(1) * 1;
+				e.checked = message.registered.includes(index);
+			});
+		}
+	});
 }
 
 document.addEventListener('DOMContentLoaded', ev=>{

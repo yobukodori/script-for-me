@@ -39,6 +39,16 @@ Internally convert it to the following code and execute it. Actually, the variab
           script.remove();  
         })();  
         ```
+        You can also use comment style or comma expression style so that it will not cause an error when executed as javascript.
+        ```
+        //options  
+        /* { "wrapCodeInScriptTag": true } */  
+        ```
+        or
+        ```
+        //options  
+        0, { "wrapCodeInScriptTag": true }
+        ```
   1. Content scripts and Page scripts  
   See [Content script environment](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Content_scripts#Content_script_environment).  
   This add-on executes the code as a content scripts.  
@@ -74,11 +84,17 @@ Internally convert it to the following code and execute it. Actually, the variab
           script.remove();  
         })();  
         ```
+  1. **//#include** preprocess-directive replaces this line with the contents of the file at the given url.
+        ```
+        //#include https://yobukodori.github.io/scrip-for-me-resource.js
+        ```
+        You can specify any part of the script resource as it is simply replaced before parsing.  
+        
   1. Other directives. (Optional)  
   **//name**: This can be placed before the //matches directive.  
-  **//disable**: disable this script. In case you don't use the script but want to keep it.  
+  **//disable**: disable this script. In case you don't use the script but want to keep it. You can temporarily enable this script from popup menu.  
   **//eof**: Ignore the lines that follow.    
-  **//[-=*;#]**: Comment line.    
+  **//[-=*;#]**: Comment line. Excluding **//#include**.  
         ```
         //name Obsolete script  
         //matches https://obsolete.site/*
@@ -98,5 +114,5 @@ Internally convert it to the following code and execute it. Actually, the variab
 - **Save**: Save settings and scripts resource. And apply settings and scripts.
 - **Apply**: Apply settings and scripts. (doesn't save).
 - **Get Status**: get current status and applied scripts.
-- **On** enables this feature. **Off** disables this feature. Or clicking on the syringe icon will bring up a pop-up menu where you can turn it on and off. 
+- **On** enables this feature. **Off** disables this feature. Or clicking on the syringe icon will bring up a pop-up menu where you can turn it on and off. From this menu you can temporarily turn individual scripts on or off.
 - **Clear Log**: Clear log.

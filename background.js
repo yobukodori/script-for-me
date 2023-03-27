@@ -9,7 +9,6 @@ let my = {
 	scripts: [],
 	scriptCount: 0,
 	modules: {},
-	registered: [],
 	cache: {},
 	//====================================================
     init : function(platformInfo) 
@@ -43,7 +42,7 @@ let my = {
 		});
     },
 	//====================================================
-	updateSettings : function(pref, fEnable)
+	updateSettings : async function(pref, fEnable)
 	{
 		let disabled;
 		my.enableAtStartup = pref.enableAtStartup || false;
@@ -54,13 +53,14 @@ let my = {
 					my.toggle(false);
 					disabled = true;
 				}
-				let res = parseScriptsResource(pref.scriptsResource);
+				let res = await parseScriptsResourceAsync(pref.scriptsResource, my.get);
 				if (res.error){
 					my.scriptsResource = "";
 					my.scripts = [];
 					my.scriptCount = 0;
 					my.modules = {};
-					my.log("error" + (res.line > 0 ? " line " + res.line : "") + ": " + res.error);
+					let e = res.error;
+					my.log("Error: " + e.message + " at " + e.source + ":" + (e.line > 0 ? e.line : "n/a"));
 				}
 				else {
 					my.scriptsResource = pref.scriptsResource;
@@ -86,16 +86,12 @@ let my = {
 	onMessage : function(message, sender, sendResponse)
 	{
 		if (message.type === "getStatus"){
-			let registered = [];
-			my.registered.forEach(r=>{
-				registered.push(r.script)
-			});
 			sendResponse({
 				enabled: my.enabled,
 				debug: my.debug,
 				scriptsResource: my.scriptsResource,
 				scripts: my.scripts,
-				registered: registered
+				registered: my.mapRegistered(),
 			});
 		}
 		else if (message.type === "getSettings"){
@@ -126,6 +122,47 @@ let my = {
 		else if (message.type === "toggle"){
 			my.toggle();
 		}
+		else if (message.type === "httpGet"){
+			my.get(message.url)
+			.then(text => sendResponse({ text }))
+			.catch(err => sendResponse({ error: "" + err }));
+			return true;
+		}
+		else if (message.type === "enableScript"){
+			let index = message.index, s = my.scripts.find(s => s._index === index);
+			if (! s){
+				my.log("Error: Script with index " + index + " not found.");
+				return;
+			}
+			if (! s.data){
+				my.log("Error: scripts[" + index + "] has no registration data.");
+				return;
+			}
+			let data = s.data;
+			s.disable = ! message.enable;
+			if (message.enable){
+				if (! data.registered){
+					try {
+						data.registered = browser.contentScripts.register(data.options);
+						data.registered.then(val => data.registered = val);
+						if (my.debug){ my.log("## registered scripts[" + s._index + "]: " + data.title); }
+						browser.runtime.sendMessage({type:"registeredChange", registered: my.mapRegistered()});
+					}
+					catch(e){
+						s.error = e.message;
+						my.log("Error register scripts[" + s._index + "]: " + e.message);
+					}
+				}
+			}
+			else {
+				if (data.registered){
+					data.registered.unregister();
+					delete data.registered;
+					if (my.debug){ my.log("## unregistered scripts[" + s._index + "]: " + data.title);}
+					browser.runtime.sendMessage({type:"registeredChange", registered: my.mapRegistered()});
+				}
+			}
+		}
 	},
 	//====================================================
 	get: function (url){
@@ -136,11 +173,15 @@ let my = {
 			if (my.debug){my.log("# fetching " + url);}
 			fetch(url)
 			.then(res=>{
-				return res.ok ? res.text() : Promise.reject(res.status + ' ' + res.statusText);
+				return res.ok ? res.text() : Promise.reject(res.status + ' ' + res.statusText + " while fetching " + url);
 			})
 			.then(text=>{ resolve(my.cache[url] = text); })
 			.catch(err=>{ reject(err); });
 		});
+	},
+	//====================================================
+	mapRegistered: function(){
+		return my.scripts.filter(s => s?.data?.registered).map(s => s._index);
 	},
 	//====================================================
     registerScripts : async function() 
@@ -162,7 +203,7 @@ let my = {
 						}
 						catch(err){
 							s.error = "" + err;
-							my.log("Error: " + err + " while fetching " + url);
+							my.log("Error: " + err);
 							return;
 						}
 					}
@@ -178,7 +219,7 @@ let my = {
 				}
 				catch(err){
 					s.error = "" + err;
-					my.log("Error: " + err + " while fetching " + url);
+					my.log("Error: " + err);
 					return;
 				}
 			}
@@ -207,25 +248,30 @@ let my = {
 					+ "# code: " + truncate(code, wrapped ? 300 : 100));
 			}
 			options.js = [{code: code}];
+			s.data = {title, options};
+			if (s.disable){ continue; }
 			try{
-				my.registered.push({index: s._index, title: title, script: s,
-					registered: await browser.contentScripts.register(options)});
-				if (my.debug){ my.log("## registered scripts[" + s._index + "]: " + title); }
+				s.data.registered = await browser.contentScripts.register(options);
+				if (my.debug){ my.log("## registered scripts[" + s._index + "]: " + s.data.title); }
 			}
 			catch(e){
 				s.error = e.message;
-				my.log("Error scripts[" + s._index + "]: " + e.message);
+				my.log("Error register scripts[" + s._index + "]: " + e.message);
 			}
 		}
+		browser.runtime.sendMessage({type:"registeredChange", registered: my.mapRegistered()});
 	},
 	//====================================================
     unregisterScripts : function() 
 	{
-		my.registered.forEach(r=>{
-			r.registered.unregister();
-			if (my.debug){ my.log("## unregistered scripts[" + r.index + "]: " + r.title);}
+		my.scripts.forEach(s =>{
+			if (s?.data?.registered){
+				s.data.registered.unregister();
+				delete s.data.registered;
+				if (my.debug){ my.log("## unregistered scripts[" + s._index + "]: " + s.data.title);}
+			}
 		});
-		my.registered = [];
+		browser.runtime.sendMessage({type:"registeredChange", registered: []});
 	},
 	//====================================================
     toggle : function(state) 
@@ -247,9 +293,8 @@ let my = {
 
         if(my.enabled) {
 			my.registerScripts().then(()=>{
-				if (my.registered.length > 0){
-					browser.runtime.sendMessage({
-						type:"statusChange", enabled:my.enabled });
+				if (my.mapRegistered().length > 0){
+					browser.runtime.sendMessage({ type:"statusChange", enabled: my.enabled });
 				}
 				else {
 					my.enabled = false;
@@ -259,8 +304,7 @@ let my = {
 		}
         else {
 			my.unregisterScripts();
-			browser.runtime.sendMessage({
-				type:"statusChange", enabled:my.enabled });
+			browser.runtime.sendMessage({ type:"statusChange", enabled: my.enabled });
         }
     },
 	//====================================================
