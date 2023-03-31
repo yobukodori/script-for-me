@@ -190,7 +190,9 @@ let my = {
 		//scripts.forEach(async (s,i)=>{
 		for (let i = 0 ; i < scripts.length ; i++){
 			let s = scripts[i];
-			let title = s.name ? s.name : "(untitled)";
+			let title = (function(name, max){
+				return name.length > max ? name.substring(0, max - 1) + "..." : name;
+			})(s.name || s.matches.join(","), 40);
 			if (my.debug){ my.log("## registering scripts[" + s._index + "]: " + title + "\n-----------"); }
 			let options = s.options ? Object.assign({}, s.options) : {}, code = "", wrapped;
 			options.matches = s.matches;

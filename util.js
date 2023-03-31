@@ -191,6 +191,7 @@ function parseScriptsResource(scriptsResource)
 					res.scriptCount++;
 					res.scripts.push(script);
 				}
+				script.position.end = i + 1;
 				script = null;
 			}
 			if (w.name === "eof")
@@ -203,7 +204,7 @@ function parseScriptsResource(scriptsResource)
 			}
 			rule = rules[w.name];
 			if (! script){
-				script = {};
+				script = { position: {start: i + 1} };
 			}
 			if (typeof script[rule.name] !== "undefined"){
 				res.error = "//" + rule.name + " has been defined multiple times."

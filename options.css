@@ -17,20 +17,20 @@ body{
 }
 
 body.pc {
-	font-size: large;
+	/* font-size: large; */
 }
 
 body.mobile {
 	font-size: 15px;
 }
 
-textarea {
-	font-size: inherit;
-}
-
 button {
 	font-size: inherit;
 	padding: 0.1em 0.5em;
+}
+
+input[type="text"] {
+	font-size: inherit;
 }
 
 .text-box {
@@ -39,8 +39,23 @@ button {
 	border-width: thin;
 }
 
+.text-box .header {
+	display: flex;
+	justify-content: space-between;
+}
+
+textarea.pc {
+	font-size: 18px;
+	line-height: 22px;
+}
+
+textarea.mobile {
+	font-size: 15px;
+	line-height: 19px;
+}
+
 #scriptsResource {
-	width: 100%;
+	width: 99%;
 	white-space: pre;
 	-moz-tab-size: 4;
 }
@@ -72,4 +87,46 @@ span.error {
 
 span.warning {
 	background-color: yellow;
+}
+
+#lineNumber {
+	width: 3em;
+	text-align: right;
+	padding: 0 1px;
+}
+
+.go-to-script-modal {
+	position: fixed;
+	top: 1.5em;
+	right: 0.3em;
+	z-index: 10;
+	border: solid 1px;
+	background-color: whitesmoke ;
+	padding-bottom: 0.2em;
+}
+
+.go-to-script-modal  .title{
+	display:flex;
+	justify-content: space-between;
+}
+
+.go-to-script-modal .container {
+	overflow: scroll;
+	padding: 0 0.5em;
+}
+
+.go-to-script-modal  .item{
+	cursor: pointer;
+}
+
+.go-to-script-modal .item:hover {
+	background-color: #87cefa;
+}
+
+.go-to-script-modal button {
+	font-size: initial;
+}
+
+.go-to-script-modal .item button {
+	margin-left: 1em;
 }

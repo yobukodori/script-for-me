@@ -59,7 +59,9 @@ function onDOMContentLoaded(platformInfo){
 		}
 		else {
 			status.scripts.forEach(s =>{
-				let id = "s" + s._index, name = s.name || "script[" + s._index + "]";
+				let id = "s" + s._index, name = (function(name, max){
+					return name.length > max ? name.substring(0, max - 1) + "..." : name;
+				})(s.name || "script[" + s._index + "] " + s.matches.join(","), 40);
 				let item = document.createElement("div"), e;
 				e = document.createElement("input"), e.type = "checkbox", e.id = id,
 					 (e.checked = !! s?.data?.registered), e.addEventListener('change', ev=>{

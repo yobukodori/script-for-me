@@ -1,0 +1,21 @@
+table.edit {
+	width: 100%;
+}
+
+textarea.edit {
+	font-family: monospace;
+	margin: 0px 0px 0px 0px;
+	padding: 0px 5px 5px 2px;
+	-moz-tab-size: 4;
+	white-space: pre;                    
+}
+
+textarea.edit.pc {
+	font-size: 18px;
+	line-height: 22px;
+}
+
+textarea.edit.mobile {
+	font-size: 15px;
+	line-height: 19px;
+}

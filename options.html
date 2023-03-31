@@ -4,6 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="edit.css">
 <link rel="stylesheet" type="text/css" href="options.css">
 </head>
 <body>
@@ -13,10 +14,20 @@
             <label for="enableAtStartup">Enable at startup</label>
             <input type="checkbox" id="printDebugInfo">
             <label for="printDebugInfo">Print debug info</label>
+            <input type="checkbox" id="addLineNumbers">
+            <label for="addLineNumbers">Add line numbers</label>
         </div>
         <div class="text-box">
-                Scripts Resource (See the <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns">URL pattern</a> for matches. And see the <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/API/contentScripts/register">contentScriptOptions</a> for options. )<br/>
-				<textarea id="scriptsResource" rows="15" spellcheck="false"></textarea>
+			<div class="header">
+                <div>Scripts Resource (See the <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns">URL pattern</a> for matches. And see the <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/API/contentScripts/register">contentScriptOptions</a> for options. )</div>
+				<div>
+				<button id="goToLine">Go to line</button>:<input type="text" id="lineNumber">
+				<button id="goToScript">Go to script...</button>
+				</div>
+			</div>
+			<div>
+				<textarea id="scriptsResource" rows="20" spellcheck="false"></textarea>
+			</div>
         </div>
         <div class="button-area">
             <button type="button" id="save">Save</button>
@@ -29,6 +40,7 @@
 			<br/><br/><br/>android</span></div>
     </div>
     <script src="util.js"></script>
+    <script src="edit.js"></script>
     <script src="options.js"></script>
 </body>
 </html>

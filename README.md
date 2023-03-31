@@ -3,9 +3,10 @@
 ## ウェブページにJavaScritを注入するFirefox拡張機能。browser.contentScripts APIの単純なラッパーです。
 ### Script for Me is available on [AMO](https://addons.mozilla.org/firefox/addon/script-for-me/).
 ### Usage
-![screenshot](https://yobukodori.github.io/freedom/image/script-for-me-screenshot.jpg)
+![screenshot](https://user-images.githubusercontent.com/32874862/229030793-a2b0d00c-e0b6-4a0b-86a4-90f7ab6f017f.jpg)
 - **Enable at startup**: Enable this feature when the browser is started.  
 - **Print debug info**:  Output debug information at the bottom of the Options tab.  
+- **Add line numbers**:  Add line numbers to script resource.  
 - **Script Resource**: Scripts to inject.    
   1. Each script begins with the //matches directive.  
 The //matches directive specifies a comma-separated list of [URL patterns](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns) for the pages where you want to inject the script.  
@@ -111,6 +112,8 @@ Internally convert it to the following code and execute it. Actually, the variab
         //eof  
         //matches *://leavemealone.com/*  
         ```
+- **Go to line**: Move the cursor to the specified line.
+- **Go to Script...**: Move the cursor to the start of each script.
 - **Save**: Save settings and scripts resource. And apply settings and scripts.
 - **Apply**: Apply settings and scripts. (doesn't save).
 - **Get Status**: get current status and applied scripts.
