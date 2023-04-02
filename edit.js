@@ -30,7 +30,7 @@ function textareaAddLineNumbers(ta, add){
 	left.append(canvas);
 	tr.append(left, right), table.append(tr), ta.before(table), right.appendChild(ta);
 
-	const numericFontRatio = 0.5, canvasCols = 6;
+	const numericFontRatio = 0.5, canvasCols = 5;
 	const computeFontSize = function(){
 		return getComputedStyle(ta).fontSize.slice(0, -2) * 1;
 	}

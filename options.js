@@ -229,6 +229,13 @@ function getBackgroundStatus()
 
 function onDOMContentLoaded(platformInfo){
 	let os = platformInfo.os, is_mobile = os === "android", is_pc = ! is_mobile;
+
+	let man = browser.runtime.getManifest(), 
+		appName = man.name, // man.browser_action.default_title, 
+		appVer = "v." + man.version;
+	document.querySelector('#appName').textContent = appName;
+	document.querySelector('#appVer').textContent = appVer;
+
 	document.querySelector('#goToLine').addEventListener('click', ev=>{
 		ev.stopPropagation();
 		let line = parseInt(document.querySelector('#lineNumber').value);

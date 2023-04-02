@@ -196,6 +196,8 @@ let my = {
 			if (my.debug){ my.log("## registering scripts[" + s._index + "]: " + title + "\n-----------"); }
 			let options = s.options ? Object.assign({}, s.options) : {}, code = "", wrapped;
 			options.matches = s.matches;
+			if (s.exclude){ options.excludeMatches = s.exclude; }
+			if (s.css){ options.css = s.css; }
 			if (s.require){
 				for (let i = 0 ; i < s.require.length ; i++){
 					let moduleName = s.require[i], url = moduleName;

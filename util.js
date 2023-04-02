@@ -15,16 +15,23 @@ function scriptToString(s, maxCodeLength)
 	if (s == null){
 		return "(null)";
 	}
-	if (s.js == null){
-		return "(not script)";
+	if (s.js == null && s.css == null){
+		return "(no js/css)";
 	}
-	return ""
+	let str = ""
 			+ (s.module ? "module: " + s.module + "\n" : "")
 			+ (s.name != null ? "name: " + (s.name ? s.name : "(untitled)") + "\n" : "")
 			+ (s.matches ? "matches: [" + s.matches + "]\n" : "")
+			+ (s.exclude ? "exclude: [" + s.exclude + "]\n" : "")
 			+ (s.require ? "require: [" + s.require + "]\n" : "")
 			+ (s.options ? "options: " + JSON.stringify(s.options) + "\n" : "")
-			+ ("js: " + truncate(s.js, maxCodeLength));
+			+ (s.css ? s.css.map((css, i)=>{
+					let props = Object.keys(css).map(k => k + ": " + css[k]).join(", ");
+					return "css["+i+"]: { " + truncate(props.replace(/\s+/g, " "), maxCodeLength) + " }";
+				}).join("\n") + "\n" : "")
+			+ (s.js ? "js: " + truncate(s.js, maxCodeLength) + "\n": "")
+			;
+	return str.trim();
 }
 
 function parseScriptsResource(scriptsResource)
@@ -50,7 +57,7 @@ function parseScriptsResource(scriptsResource)
 	}
 	let rules = {
 		initial: {
-			followingDirectives: ["module", "name", "matches", "disable", "require", "options", "js"],
+			followingDirectives: ["module", "name", "matches", "disable", "require", "exclude", "option", "options", "css", "js"],
 		},
 		module: {
 			has: "value",
@@ -64,7 +71,7 @@ function parseScriptsResource(scriptsResource)
 		},
 		name: {
 			has: "value",
-			followingDirectives: ["matches", "disable", "require", "options", "js"],
+			followingDirectives: ["matches", "disable", "require", "exclude", "option", "options", "css", "js"],
 		},
 		matches: {
 			required: true,
@@ -72,15 +79,15 @@ function parseScriptsResource(scriptsResource)
 			type: "comma separated",
 			defaultValue: ["*://*/*"],
 			alt: "module",
-			followingDirectives: ["disable", "require", "options", "js"],
+			followingDirectives: ["disable", "require", "exclude", "option", "options", "css", "js"],
 		},
 		disable: {
-			followingDirectives: ["require", "options", "js"],
+			followingDirectives: ["require", "exclude", "option", "options", "css", "js"],
 		},
 		require: {
 			has: "value",
 			type: "comma separated",
-			followingDirectives: ["disable", "options", "js"],
+			followingDirectives: ["disable", "exclude", "option", "options", "css", "js"],
 			onclose: function(val, line){
 				for (let i = 0 ; i < val.length ; i++){
 					let name = val[i];
@@ -95,16 +102,32 @@ function parseScriptsResource(scriptsResource)
 				return null;
 			},
 		},
+		exclude: {
+			has: "value",
+			type: "comma separated",
+			followingDirectives: ["disable", "require", "option", "options", "css", "js"],
+		},
+		option: {
+			has: "value",
+			type: "comma separated",
+			followingDirectives: ["disable", "require", "exclude", "options", "css", "js"],
+		},
 		options: {
 			has: "code",
 			type: "json",
-			followingDirectives: ["disable", "require", "js"],
+			followingDirectives: ["disable", "require", "css", "js"],
+		},
+		css: {
+			closeScript: function(w){ return ! (w.type === "directive" && w.name === "js"); },
+			has: "code",
+			followingDirectives: ["module", "name", "matches", "disable", "require", "exclude", "option", "options", "css", "js"],
 		},
 		js: {
-			closeScript: true,
+			closeScript: function(w){ return true; },
 			required: true,
+			alt: "css",
 			has: "code",
-			followingDirectives: ["module", "name", "matches", "disable", "require", "options", "js"],
+			followingDirectives: ["module", "name", "matches", "disable", "require", "exclude", "option", "options", "css", "js"],
 			onclose: function(val, line){
 				let url = val.trim();
 				if (/^https?:/.test(url)){
@@ -120,7 +143,7 @@ function parseScriptsResource(scriptsResource)
 	if (a.length > 0 && a[a.length - 1].length === 0){
 		a.pop();
 	}
-	for (let i = 0 ; i <= a.length ; i++){
+	for (let idx = a.findIndex(s => s.trim()), i = idx >= 0 ? idx : a.length ; i <= a.length ; i++){
 		res.line = i + 1;
 		let s = a[i], w = what(s);
 		if (w.type === "comment"){
@@ -142,21 +165,64 @@ function parseScriptsResource(scriptsResource)
 					}
 					json = json.slice(2, -2);
 				}
-				if (json.trim().length > 0){
-					try {
-						script[rule.name] = JSON.parse(json);
-					}
-					catch (e){
-						res.error = e.message;
+				let data;
+				try { data = json.length > 0 ? JSON.parse(json) : {}; }
+				catch (e){ res.error = e.message; --res.line; break; }
+				if (rule.name === "options"){
+					if (! (typeof data === "object" && ! Array.isArray(data))){
+						res.error = "//options requires {...} format JSON";
+						--res.line;
 						break;
 					}
+					if (data.excludeMatches){
+						if (! Array.isArray(data.excludeMatches)){
+							res.error = "options.excludeMatches must be array.";
+							--res.line;
+							break;
+						}
+					}
+					if (data.css){
+						if (! Array.isArray(data.css)){
+							res.error = "options.css must be array.";
+							--res.line;
+							break;
+						}
+					}
 				}
-				else {
-					script[rule.name] = {};
-				}
+				script[rule.name] = data;
 			}
 			else if (rule.type === "comma separated"){
 				script[rule.name] = script[rule.name].split(',').map(e=>e.trim()).filter(e=>e.length > 0);
+				if (rule.name === "option"){
+					let options = {};
+					script[rule.name].forEach(k =>{
+						if (res.error){ return; }
+						switch (k){
+							case "page": options.wrapCodeInScriptTag = true; break;
+							case "all": options.allFrames = true; break;
+							case "blank": options.matchAboutBlank = true; break;
+							case "start": 
+								if (options.runAt){
+									res.error = "runAt is set multiple times.";
+									--res.line;
+									break;
+								}
+								options.runAt = "document_start";
+								break;
+							case "end":
+								if (options.runAt){
+									res.error = "runAt is set multiple times.";
+									--res.line;
+									break;
+								}
+								options.runAt = "document_end";
+								break;
+							default: res.error = `unknown option '${k}'`; --res.line;
+						}
+					});
+					if (res.error){ break; }
+					script.option = options;
+				}
 			}
 			if (rule.onclose){
 				res.error = rule.onclose(script[rule.name], res.line - 1);
@@ -165,7 +231,7 @@ function parseScriptsResource(scriptsResource)
 					break;
 				}
 			}
-			if (rule.closeScript){
+			if (rule.closeScript && rule.closeScript(w)){
 				Object.keys(rules).forEach(k=>{
 					if (rules[k].required && ! (k in script)){
 						if (! (rules[k].alt && rules[k].alt in script)){
@@ -190,6 +256,25 @@ function parseScriptsResource(scriptsResource)
 				else {
 					res.scriptCount++;
 					res.scripts.push(script);
+				}
+				if (script.option){
+					script.options = Object.assign(script.option, script.options || {});
+					delete script.option;
+				}
+				if (script?.options?.excludeMatches){
+					let exclude = script.exclude || [];
+					script.options.excludeMatches.forEach(url =>{
+						! exclude.includes(url) && exclude.push(url);
+					});
+					script.exclude = exclude;
+					delete script.options.excludeMatches;
+				}
+				if (script.css || script?.options?.css){
+					let css = script?.options?.css || [];
+					script.css && css.push({code: script.css});
+					script.css = css;
+					script?.options?.css && delete script.options.css;
+					script.js = script.js || "";
 				}
 				script.position.end = i + 1;
 				script = null;

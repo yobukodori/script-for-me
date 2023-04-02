@@ -9,9 +9,6 @@
 	 min-width: 200px
 }
 
- #alert .message {
-}
-
 body{
 	background-color: #f7f7f7;
 }
@@ -22,6 +19,18 @@ body.pc {
 
 body.mobile {
 	font-size: 15px;
+}
+
+.appInfo {
+	font-weight: bold;
+}
+
+#appIcon {
+	height: 1.2em;
+}
+
+#appVer {
+	margin-left: 0.5em;
 }
 
 button {
