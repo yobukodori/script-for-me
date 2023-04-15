@@ -28,6 +28,7 @@ If the //matches directive are omitted, then ` *://*/* ` is used as the default 
         ```
   1. The //option directive specifies a comma-separated list of tokens. The five tokens are available.  
     e.g. `//option page, all, start`  
+     **nonce**: Sets `true` to `wrapCodeInScriptTag` and `nonce`.  
      **page**: Sets `true` to `wrapCodeInScriptTag`.  
      **all**: Sets `true` to `allFrames`.  
      **blank**: Sets `true` to `matchAboutBlank`.  
@@ -44,16 +45,30 @@ If the //matches directive are omitted, then ` *://*/* ` is used as the default 
         }
         ```
         **wrapCodeInScriptTag** is a Script For Me specific option. If its value is true, the code is wrapped in a script tag and executed. Then you can access the variables defined by page script.  
-Internally convert it to the following code and execute it. Actually, the variable name ` script ` replaced by a random name.  
+Internally convert it to the following code and execute it.  
         ```
         (function() {  
-          let script = document.createElement("script");  
-          script.appendChild(document.createTextNode("("+function(){  
-            // your code  
-          }+")();"));  
-          document.documentElement.appendChild(script);  
-          script.remove();  
+          let e = document.createElement("script");
+          e.append(<your code>);
+          e.nonce = <nonce value>; // Set if nonce option is true.
+          document.documentElement.appendChild(e); 
+          e.remove();
         })();  
+        ```
+        **nonce** option is used with **wrapCodeInScriptTag** to set the nonce attribute on the script tag.  
+		For example, `twitter.com` restricts script execution with Content Security Policy nonce-source. To run code in the context of a page script:  
+        ```
+        //name xhr logger
+        //matches *://twitter.com/*
+        //; The next option should be 'nonce'. Specifying 'page' will fail.
+        //option nonce
+        //js
+        XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, {
+            apply: function(target, thisArg, args ) {
+                console.log(args[0], args[1]);
+                return Reflect.apply(target, thisArg, args);
+            }
+        });
         ```
         You can also use comment style or comma expression style so that it will not cause an error when executed as javascript.
         ```

@@ -194,7 +194,7 @@ let my = {
 				return name.length > max ? name.substring(0, max - 1) + "..." : name;
 			})(s.name || s.matches.join(","), 40);
 			if (my.debug){ my.log("## registering scripts[" + s._index + "]: " + title + "\n-----------"); }
-			let options = s.options ? Object.assign({}, s.options) : {}, code = "", wrapped;
+			let options = s.options ? Object.assign({}, s.options) : {}, code = "", truncatedCode;
 			options.matches = s.matches;
 			if (s.exclude){ options.excludeMatches = s.exclude; }
 			if (s.css){ options.css = s.css; }
@@ -230,26 +230,70 @@ let my = {
 			else {
 				code += s.js;
 			}
-			if (typeof options.wrapCodeInScriptTag !== "undefined"){
-				if (options.wrapCodeInScriptTag){
-					wrapped = true;
-					if (my.debug){ my.log("# wrapping code in script tag."); }
-					let name = "_" + Math.random().toString().substring(2,10);
-					code = '(function(){'
-					+ 'let ' + name + ' = document.createElement("script"); '
-					+ '' + name + '.appendChild(document.createTextNode(' + JSON.stringify(code) + ')); '
-					+ 'document.documentElement.appendChild(' + name + '); ' + name + '.remove();'
-					+ '})()';
+			if (options.wrapCodeInScriptTag){
+				if (my.debug){ my.log("# wrapping code in script tag."); }
+				let stringifiedCode = JSON.stringify(code);
+				if (options.nonce){
+					code =
+					`(function(){
+						let injected, observer, handler,
+						inject = function(nonce){
+							if (injected){ return; }
+							injected = true;
+							observer && observer.disconnect();
+							handler && document.removeEventListener("readystatechange", handler);
+							let e = document.createElement("script");
+							e.append(${stringifiedCode});
+							e.nonce = nonce;
+							document.documentElement.appendChild(e); 
+							e.remove();
+						},
+						onDocumentLoaded = function(){
+							inject((Array.from(document.scripts).find(e => e.nonce) || {}).nonce);
+						};
+						if (document.readyState === "loading"){
+							observer = new MutationObserver((mutations, observer)=>{
+								mutations.forEach((m,i)=>{
+									if (injected){ return; }
+									m.addedNodes.forEach(n =>{
+										if (injected){ return; }
+										if (n && n.nodeType === Node.ELEMENT_NODE && n.tagName === "SCRIPT" && n.nonce){
+											inject(n.nonce);
+										}
+									});
+								});
+							});
+							observer.observe(document, {childList: true, subtree: true});
+							document.addEventListener("readystatechange", handler = function(ev){
+								document.readyState !== "loading" && onDocumentLoaded();
+							});
+						}
+						else {
+							onDocumentLoaded();
+						}
+					})()`;
 				}
+				else {
+					code = 
+					`(function(){
+						let e = document.createElement("script");
+						e.append(${stringifiedCode});
+						document.documentElement.appendChild(e); 
+						e.remove();
+					})()`;
+				}
+				code = code.replace(/\s*\n\s*/g, " ");
+				let start = code.indexOf("e.append(") + 9, end = code.lastIndexOf(options.nonce ? "); e.nonce" : "); document");
+				truncatedCode = code.substring(0, start) +  truncate(code.substring(start,end), 100) + code.substring(end);
 			}
-			if (typeof options.wrapCodeInScriptTag !== "undefined"){
-				if (my.debug){ my.log("# deleting options.wrapCodeInScriptTag"); }
-				delete options.wrapCodeInScriptTag;
+			else {
+				truncatedCode = truncate(code, 100);
 			}
+			delete options.wrapCodeInScriptTag;
+			delete options.nonce;
 			if (my.debug){
 				my.log("# options: " + JSON.stringify(options));
-				my.log((i === scripts.length - 1 ? "----------\n" : "") 
-					+ "# code: " + truncate(code, wrapped ? 300 : 100));
+				my.log((i === scripts.length - 1 ? "----------\n" : "") + "# code: " + truncatedCode);
 			}
 			options.js = [{code: code}];
 			s.data = {title, options};
