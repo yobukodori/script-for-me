@@ -8,6 +8,7 @@
 - **Print debug info**:  Output debug information at the bottom of the Options tab.  
 - **Add line numbers**:  Add line numbers to script resource.  
 - **Script Resource**: Scripts to inject.    
+  1. Script Resource must not begin with a non-directive line, such as a blank line. Always start with a specific directive line.  
   1. Each script begins with the //matches directive.  
 The //matches directive specifies a comma-separated list of [URL patterns](https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns) for the pages where you want to inject the script.  
 If the //matches directive are omitted, then ` *://*/* ` is used as the default value.
