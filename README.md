@@ -1,5 +1,5 @@
 # Script for Me - firefox extension
-## Injects JavaScript code (and CSS code) into a page. A simple wrapper for the browser.contentScripts API.
+## A tiny userscript manager. Injects JavaScript code (and CSS code) into a page. A simple wrapper for the browser.contentScripts API.
 ## ウェブページに JavaScrit (CSSも可) を注入するFirefox拡張機能。browser.contentScripts APIの単純なラッパーです。
 ### Script for Me is available on [AMO](https://addons.mozilla.org/firefox/addon/script-for-me/).
 ### Usage
