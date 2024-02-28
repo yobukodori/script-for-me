@@ -322,7 +322,7 @@ function onDOMContentLoaded(platformInfo){
 			alert("invalid line number");
 			return;
 		}
-		goToLine(line);
+		goToLine(line, line);
 	});
 	document.querySelector('#lineNumber').addEventListener('keyup', ev =>{
 		if (ev.key == 'Enter') {
