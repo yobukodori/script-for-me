@@ -3,10 +3,11 @@
 ## ウェブページに JavaScrit (CSSも可) を注入するFirefox拡張機能。browser.contentScripts APIの単純なラッパーです。
 ### Script for Me is available on [AMO](https://addons.mozilla.org/firefox/addon/script-for-me/).
 ### Usage
-![screenshot](https://user-images.githubusercontent.com/32874862/229333369-2c64db2a-bff3-4333-99a3-3236d3c5b805.jpg)
+![screenshot](https://yobukodori.github.io/freedom/image/script-for-me-screenshot.jpg)
 - **Enable at startup**: Enable this feature when the browser is started.  
 - **Print debug info**:  Output debug information at the bottom of the Options tab.  
 - **Add line numbers**:  Add line numbers to script resource.  
+- **Theme**: Select a color theme for the settings page.  As soon as you select a theme, it will be reflected in the settings page, but only temporarily. Apply or Save as needed.
 - **Script Resource**: Scripts to inject.    
   1. Script Resource must not begin with a non-directive line, such as a blank line. Always start with a specific directive line.  
   1. Each script begins with the //matches directive.  
@@ -154,9 +155,12 @@ Internally convert it to the following code and execute it.
         //matches *://leavemealone.com/*  
         ```
 - **Go to line**: Move the cursor to the specified line.
-- **Go to Script...**: Move the cursor to the start of each script.
+- **Go to Script**: Move the cursor to the start of each script.
+- **Select Script**: Select a code range for each script.
 - **Save**: Save settings and scripts resource. And apply settings and scripts.
 - **Apply**: Apply settings and scripts. (doesn't save).
 - **Get Status**: get current status and applied scripts.
 - **On** enables this feature. **Off** disables this feature. Or clicking on the syringe icon will bring up a pop-up menu where you can turn it on and off. From this menu you can temporarily turn individual scripts on or off.
 - **Clear Log**: Clear log.
+- **Export Settings**: Export settings to the file. It is the currently applied settings that are exported, not the saved settings.
+- **Import Settings**: Import and apply settings from the file. Do not save.

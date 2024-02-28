@@ -1,16 +1,27 @@
 #alert { 
 	position: fixed;
-	 top: 30%;
-	 left: 50%;
-	 transform: translate(-50%,-50%);
-	 padding: 0.5em 1em;
-	 background-color: #ffff88;
-	 border: solid;
-	 min-width: 200px
+	top: 30%;
+	left: 50%;
+	transform: translate(-50%,-50%);
+	padding: 0.5em 1em;
+	background-color: #ffff88;
+	color: black;
+	border: solid;
+	min-width: 200px
+}
+
+#inform { 
+	background-color: #ffff88;
+	color: black;
+	border: solid thin;
+	max-width: 50%;
+	padding: 0 0.3em;
 }
 
 body{
-	background-color: #f7f7f7;
+	background-color: Canvas;
+	color: CanvasText;
+	color-scheme: light dark;
 }
 
 body.pc {
@@ -33,6 +44,10 @@ body.mobile {
 	margin-left: 0.5em;
 }
 
+select {
+	font-size: inherit;
+}
+
 button {
 	font-size: inherit;
 	padding: 0.1em 0.5em;
@@ -43,6 +58,7 @@ input[type="text"] {
 }
 
 .text-box {
+	margin-top: 0.2em;
 	border-style: solid;
 	padding: 0px 5px 5px;
 	border-width: thin;
@@ -75,6 +91,7 @@ textarea.mobile {
 
 #toggle.on {
 	background-color: yellow;
+	color: black;
 }
 
 #toggle.off {
@@ -91,11 +108,13 @@ textarea.mobile {
 
 span.error {
 	background-color: pink;
+	color: black;
 	font-weight: bold;
 }
 
 span.warning {
 	background-color: yellow;
+	color: black;
 }
 
 #lineNumber {
@@ -110,13 +129,14 @@ span.warning {
 	right: 0.3em;
 	z-index: 10;
 	border: solid 1px;
-	background-color: whitesmoke ;
+	background-color: Canvas;
 	padding-bottom: 0.2em;
 }
 
 .go-to-script-modal  .title{
 	display:flex;
 	justify-content: space-between;
+	padding-left: 0.3em;
 }
 
 .go-to-script-modal .container {
@@ -130,6 +150,10 @@ span.warning {
 
 .go-to-script-modal .item:hover {
 	background-color: #87cefa;
+}
+
+.dark-mode .go-to-script-modal .item:hover {
+	background-color: #4169e1;
 }
 
 .go-to-script-modal button {

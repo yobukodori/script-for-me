@@ -2,6 +2,7 @@ let my = {
 	os : "n/a", // mac|win|android|cros|linux|openbsd
 	defaultTitle: "Script for Me",
 	initialized: false,
+	settings: {},
 	enableAtStartup: false,
     enabled : false,
 	debug: false,
@@ -27,7 +28,7 @@ let my = {
 				my.updateButton();
 				browser.runtime.onMessage.addListener(my.onMessage);
 
-				browser.storage.local.get(['enableAtStartup', 'printDebugInfo', 'scriptsResource'])
+				browser.storage.local.get(['enableAtStartup', 'printDebugInfo','addLineNumbers','colorScheme', 'scriptsResource'])
 				.then((pref) => {
 					my.updateSettings(pref, pref.enableAtStartup);
 					resolve();
@@ -44,6 +45,7 @@ let my = {
 	//====================================================
 	updateSettings : async function(pref, fEnable)
 	{
+		my.settings = pref;
 		let disabled;
 		my.enableAtStartup = pref.enableAtStartup || false;
 		my.debug = pref.printDebugInfo || false;
@@ -100,6 +102,8 @@ let my = {
 					sendResponse({
 						enableAtStartup: my.enableAtStartup,
 						printDebugInfo: my.debug,
+						addLineNumbers: my.settings.addLineNumbers,
+						colorScheme: my.settings.colorScheme,
 						scriptsResource: my.scriptsResource
 					});
 				})

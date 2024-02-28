@@ -1,3 +1,9 @@
+body {
+	background-color: Canvas;
+	color: CanvasText;
+	color-scheme: light dark;
+}
+
 .main {
 	display:flex;
 	flex-direction: column;
@@ -29,6 +35,10 @@ label[for="enable-future"].gray {
 
 #settings:hover {
 	background-color: #87cefa;
+}
+
+.dark-mode #settings:hover {
+	background-color: #4169e1;
 }
 
 .gear-emoji {

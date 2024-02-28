@@ -14,19 +14,27 @@
 				<img id="appIcon" src="icons/icon-48.png">
 				<span id="appName">(app name)</span><span id="appVer">(app version)</span>
 			</span>
-            <input type="checkbox" id="enableAtStartup">
-            <label for="enableAtStartup">Enable at startup</label>
-            <input type="checkbox" id="printDebugInfo">
-            <label for="printDebugInfo">Print debug info</label>
-            <input type="checkbox" id="addLineNumbers">
-            <label for="addLineNumbers">Add line numbers</label>
+            <input type="checkbox" id="enableAtStartup"><label
+				for="enableAtStartup">Enable at startup</label>
+            <input type="checkbox" id="printDebugInfo"><label
+				for="printDebugInfo">Print debug info</label>
+            <input type="checkbox" id="addLineNumbers"><label
+				for="addLineNumbers">Add line numbers</label>
+			&nbsp;
+			<label for="colorScheme">Theme:</label>
+			<select id="colorScheme">
+			<option value="auto">Auto</option>
+			<option value="light">Light</option>
+			<option value="dark">Dark</option>
+			</select>
         </div>
         <div class="text-box">
 			<div class="header">
-                <div>Scripts Resource (See the <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns">URL pattern</a> for matches. And see the <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/API/contentScripts/register">contentScriptOptions</a> for options. )</div>
+                <div>Scripts Resource (Ref: <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/Match_patterns">URL pattern</a>, <a href="https://developer.mozilla.org/docs/Mozilla/Add-ons/WebExtensions/API/contentScripts/register">contentScriptOptions</a>)</div>
 				<div>
 				<button id="goToLine">Go to line</button>:<input type="text" id="lineNumber">
-				<button id="goToScript">Go to script...</button>
+				<button id="goToScript">Go to script</button>
+				<button id="selectScript">Select script</button>
 				</div>
 			</div>
 			<div>
@@ -39,6 +47,8 @@
 			| <button type="button" id="getStatus">Get Status</button>
 			<button type="button" id="toggle">Toggle On/Off</button>
 			<button type="button" id="clearLog">Clear Log</button>
+			| <button type="button" id="exportSettings">Export Settings</button>
+			<button type="button" id="importSettings">Import Settings</button>
 		</div>
 		<div id="log"><span>dummy for<br/><br/><br/><br/><br/><br/>
 			<br/><br/><br/>android</span></div>
